@@ -431,6 +431,81 @@ table.tbl{font-size:12.5px}
 .photo-upload .prev{width:90px;height:68px;flex-basis:90px}
 .page-loading{padding:40px}
 
+/* =====================================================================
+   UKURAN RINGKAS (v1.2) — lebih kecil lagi, nyaman di laptop dengan
+   skala layar 125%–150%
+   ===================================================================== */
+body{font-size:13px}
+.btn{min-height:36px;padding:7px 13px;font-size:12.5px}
+.btn-lg{min-height:42px;font-size:13.5px}
+.btn-sm{min-height:28px;font-size:11.5px}
+.input,.select,.textarea{padding:8px 11px;font-size:13px}
+.input-icon .input{padding-left:34px}
+.input-icon>i{left:11px;font-size:12px}
+.input-icon .eye{width:32px;height:32px}
+.field{margin-bottom:10px}
+.field label{font-size:12px}
+.card{padding:14px}
+.card h3{font-size:13.5px}
+.alert{font-size:12.5px;padding:8px 11px}
+/* Login */
+.auth-hero{padding:18px 16px 72px}
+.school-logo,.logo-fallback{width:48px;height:48px;border-radius:13px;padding:5px;margin-bottom:8px}
+.logo-fallback{font-size:22px}
+.badge-pill{font-size:10px;padding:3px 10px;margin-bottom:6px}
+.auth-hero h1{font-size:16px}
+.auth-hero .sub{font-size:12px}
+.auth-hero .school{font-size:12px;margin-top:4px}
+.auth-card{max-width:360px;margin-top:-56px;padding:16px 15px}
+.auth-card h2{font-size:15px}
+.auth-card .lead{font-size:12px;margin-bottom:12px}
+.status-banner{font-size:12px;padding:7px 10px;margin-bottom:10px}
+.help-steps{margin-top:12px;padding-top:10px;gap:6px}
+.help-steps div{font-size:11.5px}
+.help-steps b{flex:0 0 20px;height:20px;font-size:10.5px;border-radius:6px}
+.foot{font-size:11px;padding:14px 16px 20px}
+.admin-login-card{max-width:350px}
+.admin-login-card .icon-top{width:42px;height:42px;font-size:18px}
+/* Halaman pemilihan */
+.v-header-inner{padding:7px 14px}
+.v-header img,.v-header .logo-mini{width:30px;height:30px;flex-basis:30px}
+.v-header .t1{font-size:12.5px}.v-header .t2{font-size:10.5px}
+.v-header .btn{min-height:30px;font-size:11.5px}
+.v-wrap{max-width:1040px;padding:12px 14px 36px}
+.v-hello{padding:10px 12px}
+.v-hello .av{width:34px;height:34px;flex-basis:34px;font-size:13px;border-radius:10px}
+.v-hello h2{font-size:14px}.v-hello p{font-size:11.5px}
+.step{padding:8px;font-size:11px}
+.step strong{font-size:11.5px}
+.sec-title{font-size:14.5px}
+.cand-grid{gap:12px}
+.cand-no{width:38px;height:38px;font-size:18px;border-radius:10px}
+.cand-body{padding:10px 12px 2px}
+.cand-names strong{font-size:13.5px}
+.cand-sec p,.cand-sec li{font-size:12px}
+.cand-actions{padding:8px 12px 12px}
+.cand-actions .btn{font-size:11.5px;padding:6px 8px;min-height:34px}
+/* Modal */
+.modal-box{max-width:460px}.modal-box.lg{max-width:700px}.modal-box.sm{max-width:350px}
+.modal-head h3{font-size:14px}
+.confirm-pick .pic{width:100px;height:100px}
+.confirm-pick h4{font-size:14.5px}.confirm-pick .q{font-size:14px}
+.thanks-card{max-width:360px;padding:22px 16px}
+.thanks-icon{width:60px;height:60px;font-size:28px}
+.thanks-card h2{font-size:17px}
+/* Dashboard */
+:root{--sidebar:212px}
+.sb-nav a{padding:7px 10px;font-size:12.5px}
+.topbar h1{font-size:14.5px}
+.stat{padding:10px}
+.stat .ic{width:28px;height:28px;font-size:12px;margin-bottom:6px}
+.stat .v{font-size:18px}
+.stat .l{font-size:11px}
+.status-hero .grow h2{font-size:14.5px}
+.chart-box{height:230px}.chart-box.sm{height:190px}
+table.tbl{font-size:12px}
+.tbl td{padding:6px 9px}.tbl th{padding:7px 9px;font-size:10.5px}
+
 /* ---------- PRINT ---------- */
 #print-area{display:none}
 @media print{
@@ -757,7 +832,7 @@ function api(fn) {
       if (raw.indexOf('SESSION_EXPIRED') > -1) handleExpired();
       reject(e);
     }
-    if (typeof GAS_URL !== 'string' || !/^https:\/\/script\.google\.com\/macros\/s\/[^\/]+\/exec$/.test(GAS_URL)) {
+    if (typeof GAS_URL !== 'string' || GAS_URL.indexOf('GANTI_') > -1 || !/^https:\/\/script\.google\.com\/macros\/s\/[^\/]+\/exec$/.test(GAS_URL)) {
       return fail('Link server belum diatur. Panitia: isi GAS_URL di file config.js dengan URL /exec dari Apps Script.');
     }
     fetch(GAS_URL, {
