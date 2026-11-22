@@ -318,7 +318,7 @@ var SHEETS = {
 
 var SCHEMA = {};
 SCHEMA[SHEETS.PENGATURAN] = ['ID', 'NAMA_SEKOLAH', 'TAHUN_PEMILIHAN', 'JUDUL_PEMILIHAN', 'TANGGAL_MULAI',
-  'TANGGAL_SELESAI', 'STATUS_VOTING', 'LOGO_SEKOLAH', 'FOTO_BANNER', 'PESAN_SELESAI'];
+  'TANGGAL_SELESAI', 'STATUS_VOTING', 'LOGO_SEKOLAH', 'FOTO_BANNER', 'PESAN_SELESAI', 'LOGO_OSIS'];
 SCHEMA[SHEETS.SISWA] = ['ID_SISWA', 'NIS', 'NISN', 'NAMA_SISWA', 'KELAS', 'PASSWORD/PIN', 'STATUS_AKUN',
   'STATUS_MEMILIH', 'WAKTU_MEMILIH'];
 SCHEMA[SHEETS.KANDIDAT] = ['ID_KANDIDAT', 'NOMOR_URUT', 'NAMA_KETUA', 'NAMA_WAKIL', 'KELAS', 'FOTO_KANDIDAT',
@@ -437,6 +437,7 @@ function defaultSettings_() {
     TANGGAL_SELESAI: '',
     STATUS_VOTING: STATUS.BELUM_DIBUKA,
     LOGO_SEKOLAH: '',
+    LOGO_OSIS: '',
     FOTO_BANNER: '',
     PESAN_SELESAI: 'Terima kasih telah menggunakan hak suaramu. Pilihanmu menentukan masa depan OSIS kita!'
   };
@@ -469,8 +470,21 @@ function trimSeconds_(s) {
   return m ? m[1] : String(s || '');
 }
 
+/** Menambahkan kolom yang belum ada di baris judul (untuk update tanpa setup ulang). */
+function ensureHeaders_(sh, headers, required) {
+  required.forEach(function (h) {
+    if (headers.indexOf(h) === -1) {
+      headers.push(h);
+      sh.getRange(1, headers.length).setValue(h)
+        .setFontWeight('bold').setBackground('#0b2a5b').setFontColor('#ffffff');
+    }
+  });
+  return headers;
+}
+
 function saveSettingsRaw_(obj) {
   var t = readTable_(SHEETS.PENGATURAN);
+  ensureHeaders_(t.sheet, t.headers, SCHEMA[SHEETS.PENGATURAN]);
   var row = obj._row || (t.rows[0] && t.rows[0]._row) || 2;
   writeRow_(t.sheet, t.headers, row, obj);
 }
@@ -489,6 +503,7 @@ function settingsPublic_(st) {
     TANGGAL_SELESAI: st.TANGGAL_SELESAI,
     STATUS_VOTING: st.STATUS_VOTING,
     LOGO_SEKOLAH: st.LOGO_SEKOLAH,
+    LOGO_OSIS: st.LOGO_OSIS || '',
     FOTO_BANNER: st.FOTO_BANNER,
     PESAN_SELESAI: st.PESAN_SELESAI,
     WINDOW: votingWindow_(st),
@@ -1569,7 +1584,7 @@ function uploadImage(token, dataUrl, kind) {
   if (!m) throw new Error('Format gambar tidak didukung (gunakan JPG, PNG, atau WEBP).');
   var bytes = Utilities.base64Decode(m[3]);
   if (bytes.length > 4 * 1024 * 1024) throw new Error('Ukuran gambar maksimal 4 MB.');
-  kind = ['kandidat', 'logo', 'banner'].indexOf(kind) > -1 ? kind : 'gambar';
+  kind = ['kandidat', 'logo', 'logo_osis', 'banner'].indexOf(kind) > -1 ? kind : 'gambar';
   var ext = m[2] === 'jpeg' || m[2] === 'jpg' ? 'jpg' : m[2];
   var blob = Utilities.newBlob(bytes, m[1], kind + '_' + Utilities.formatDate(new Date(), tz_(), 'yyyyMMdd_HHmmss') + '.' + ext);
   var file = mediaFolder_().createFile(blob);
@@ -1607,6 +1622,7 @@ function saveSettings(token, d) {
   st.TANGGAL_MULAI = mulai;
   st.TANGGAL_SELESAI = selesai;
   st.LOGO_SEKOLAH = normalizeImageUrl_(d.LOGO_SEKOLAH);
+  st.LOGO_OSIS = normalizeImageUrl_(d.LOGO_OSIS);
   st.FOTO_BANNER = normalizeImageUrl_(d.FOTO_BANNER);
   st.PESAN_SELESAI = clean_(d.PESAN_SELESAI, 500, true);
   st.ID = st.ID || '1';

@@ -204,7 +204,7 @@ Hal yang perlu diingat:
 ## 9. Penggunaan Aplikasi
 
 ### Persiapan (H-7 s.d. H-1)
-1. **Pengaturan:** isi nama sekolah, judul, tahun, tanggal/waktu mulai dan selesai, pesan selesai, logo, dan banner. Klik **Simpan**.
+1. **Pengaturan:** isi nama sekolah, judul, tahun, tanggal/waktu mulai dan selesai, pesan selesai, **logo sekolah**, **logo OSIS**, dan banner. Klik **Simpan**. Kedua logo tampil berdampingan di halaman login, kartu pemilih, dan kop semua laporan. Gunakan file PNG berlatar transparan agar rapi.
 2. **Data Siswa:** import seluruh siswa, lalu cetak dan bagikan kartu PIN (bisa dimasukkan ke amplop per kelas).
 3. **Data Kandidat:** masukkan semua pasangan calon beserta foto.
 4. **Simulasi:** buka voting, lalu minta 3–5 siswa/guru mencoba memilih. Tutup voting, periksa hasilnya, kemudian jalankan **Data Siswa → Reset Status Memilih** (ketik `RESET`). Langkah ini menghapus suara simulasi dan mengembalikan semua siswa ke status BELUM MEMILIH.
