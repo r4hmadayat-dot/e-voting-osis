@@ -561,7 +561,7 @@ table.tbl{font-size:12px}
   .page-break{page-break-before:always}
   .dh-table td{height:30px;vertical-align:middle}
   .dh-table td.ttd{width:88px;font-size:9pt;vertical-align:top;padding-top:3px}
-  .dh-table td:last-child{white-space:nowrap;font-size:9.5pt}
+  .dh-table .cbx{display:inline-block;width:13px;height:13px;border:1.3px solid #000;vertical-align:middle}
   .dh-table thead{display:table-header-group}
   .dh-table tr{page-break-inside:avoid}
 }
@@ -1333,6 +1333,7 @@ var NAV = [
   { id: 'siswa', label: 'Data Pemilih', sub: 'Siswa, guru, dan staf', icon: 'fa-user-graduate' },
   { id: 'kandidat', label: 'Data Kandidat', sub: 'Pasangan calon ketua & wakil', icon: 'fa-people-group' },
   { id: 'monitoring', label: 'Monitoring Voting', sub: 'Partisipasi secara langsung', icon: 'fa-chart-line' },
+  { id: 'hadir', label: 'Daftar Hadir', sub: 'Pemanggilan & kehadiran otomatis', icon: 'fa-clipboard-check' },
   { id: 'hasil', label: 'Hasil Voting', sub: 'Perolehan suara akhir', icon: 'fa-square-poll-vertical' },
   { id: 'pengaturan', label: 'Pengaturan', sub: 'Jadwal, identitas & tampilan', icon: 'fa-gear', roles: ['SUPERADMIN'] },
   { id: 'laporan', label: 'Laporan', sub: 'Cetak PDF & unduh Excel', icon: 'fa-file-lines' },
@@ -2273,7 +2274,8 @@ PAGES.laporan = function (el, my) {
       { t: 'berita_acara', ic: 'fa-file-signature', h: 'Berita Acara Pemilihan', p: 'Dokumen resmi pemungutan dan penghitungan suara dengan kolom tanda tangan.', lock: true },
       { t: 'rekapitulasi', ic: 'fa-table-list', h: 'Rekapitulasi Suara', p: 'Rekap perolehan suara dan partisipasi per kelas.', lock: true },
       { t: 'perolehan', ic: 'fa-ranking-star', h: 'Hasil Perolehan Setiap Kandidat', p: 'Satu bagian per pasangan calon: foto, suara, persentase, dan peringkat.', lock: true },
-      { t: 'daftar_hadir', ic: 'fa-clipboard-check', h: 'Daftar Hadir Pemilih', p: 'Lembar daftar hadir per kelas dengan kolom tanda tangan. Bisa dicetak kosong sebelum voting atau terisi waktu memilih.', lock: false },
+      { t: 'dh_manual', ic: 'fa-clipboard-list', h: 'Daftar Hadir Manual (Pemanggilan)', p: 'Dicetak sebelum voting. Panitia memanggil pemilih sesuai nomor urut; pemilih mencentang hadir dan tanda tangan.', lock: false },
+      { t: 'dh_otomatis', ic: 'fa-clipboard-check', h: 'Daftar Hadir Otomatis (Aplikasi)', p: 'Terisi sendiri dari aplikasi: siapa yang sudah memilih dan jam memilihnya. Nomor urut sama dengan daftar manual.', lock: false },
       { t: 'partisipasi', ic: 'fa-clipboard-user', h: 'Daftar Partisipasi Pemilih', p: 'Rekap sudah/belum memilih per kelas, guru, dan staf. Tidak memuat pilihan.', lock: false },
       { t: 'excel', ic: 'fa-file-excel', h: 'Download Excel', p: 'Ringkasan, partisipasi per kelas, daftar siswa, dan hasil (jika voting sudah ditutup).', lock: false }
     ];
@@ -2315,7 +2317,7 @@ function getSig() {
 }
 
 function runReport(type, btn) {
-  if (type === 'daftar_hadir') return openDaftarHadir(btn);
+  if (type === 'dh_manual' || type === 'dh_otomatis') return openDaftarHadir(btn, type === 'dh_manual' ? 'manual' : 'otomatis');
   btnLoading(btn, true, 'Menyiapkan...');
   api('generateReport', tok(), type).then(function (d) {
     btnLoading(btn, false);
@@ -2369,99 +2371,182 @@ function signBlock(sig, kind, dateStr) {
   return top + '<div class="sign">' + line('Mengetahui,<br>Kepala Sekolah', sig.kepsek, sig.nipKepsek) + line('<br>Ketua Panitia', sig.ketua, sig.nipKetua) + '</div>';
 }
 
-/* ---------- DAFTAR HADIR PEMILIH ---------- */
-function openDaftarHadir(btn) {
+/* ---------- DAFTAR HADIR PEMILIH ----------
+   Manual  : dicetak kosong, untuk pemanggilan + tanda tangan.
+   Otomatis: terisi dari aplikasi (status & jam memilih).
+   Keduanya memakai URUTAN YANG SAMA (per kelas, urut nama), sehingga
+   nomor urut panggil di kertas = nomor di aplikasi. */
+function dhAktif(students) {
+  return (students || []).filter(function (x) { return x.STATUS_AKUN !== 'NONAKTIF'; });
+}
+function dhKelasList(students) {
+  return orderKelas(uniq(dhAktif(students).map(function (x) { return x.KELAS; })));
+}
+function daftarHadirGroup(students, k) {
+  return dhAktif(students).filter(function (x) { return x.KELAS === k; }).sort(function (a, b) {
+    return String(a.NAMA_SISWA).localeCompare(String(b.NAMA_SISWA), 'id', { sensitivity: 'base' }) || String(a.NIS).localeCompare(String(b.NIS));
+  });
+}
+function jamOf(x) { return x.WAKTU_MEMILIH ? String(x.WAKTU_MEMILIH).slice(11, 16) : ''; }
+function nowStamp() {
+  var d = new Date(); function p(n) { return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+function openDaftarHadir(btn, mode, presetKelas) {
   btnLoading(btn, true, 'Menyiapkan...');
   api('generateReport', tok(), 'partisipasi').then(function (d) {
     btnLoading(btn, false);
-    var aktif = (d.students || []).filter(function (x) { return x.STATUS_AKUN !== 'NONAKTIF'; });
-    var kelas = orderKelas(uniq(aktif.map(function (x) { return x.KELAS; })));
+    var kelas = dhKelasList(d.students);
     if (!kelas.length) return toast('Belum ada data pemilih aktif.', 'warn');
+    var manual = mode === 'manual';
     openModal({
-      title: '<i class="fa-solid fa-clipboard-check"></i> Daftar Hadir Pemilih',
+      title: '<i class="fa-solid ' + (manual ? 'fa-clipboard-list' : 'fa-clipboard-check') + '"></i> Daftar Hadir ' + (manual ? 'Manual' : 'Otomatis'),
       size: 'sm',
       body: '<div class="field"><label>Kelas / Jenis Pemilih</label><select class="select" id="dh-kelas">' +
         '<option value="__ALL__">Semua (satu halaman per kelas)</option>' +
-        kelas.map(function (k) { return '<option value="' + esc(k) + '">' + esc(kelasLabel(k)) + '</option>'; }).join('') + '</select></div>' +
-        '<div class="field"><label>Isi lembar</label><select class="select" id="dh-mode">' +
-        '<option value="kosong">Kosong — diisi manual saat pemilih datang</option>' +
-        '<option value="terisi">Terisi otomatis — waktu memilih dari aplikasi</option></select>' +
-        '<div class="hint">Pilih <b>Kosong</b> untuk dicetak sebelum voting. Pilih <b>Terisi</b> untuk arsip setelah voting.</div></div>' +
-        '<div class="alert alert-info small"><i class="fa-solid fa-user-secret"></i><span>Daftar hadir hanya mencatat <b>siapa</b> yang memilih, tidak memuat pilihan kandidat.</span></div>',
+        kelas.map(function (k) { return '<option value="' + esc(k) + '"' + (k === presetKelas ? ' selected' : '') + '>' + esc(kelasLabel(k)) + '</option>'; }).join('') + '</select></div>' +
+        (manual
+          ? '<div class="alert alert-info small"><i class="fa-solid fa-bullhorn"></i><span>Cetak <b>sebelum voting</b>. Panitia memanggil pemilih sesuai <b>No. Urut</b>; pemilih mencentang kolom Hadir dan tanda tangan. Nomor urut sama dengan menu <b>Daftar Hadir</b> di aplikasi.</span></div>'
+          : '<div class="alert alert-info small"><i class="fa-solid fa-robot"></i><span>Terisi otomatis dari aplikasi per <b>' + esc(d.generatedAt) + '</b>: status dan jam memilih. Tidak memuat pilihan kandidat.</span></div>'),
       footer: '<button class="btn btn-outline" onclick="closeModal()">Batal</button>' +
         '<button class="btn btn-light" id="dh-xlsx"><i class="fa-solid fa-file-excel"></i> Unduh Excel</button>' +
         '<button class="btn btn-primary" id="dh-print"><i class="fa-solid fa-print"></i> Cetak / PDF</button>'
     });
     var pick = function () {
-      var k = $('dh-kelas').value, mode = $('dh-mode').value;
-      var list = k === '__ALL__' ? kelas : [k];
-      return { kelas: list, mode: mode, rows: aktif };
+      var k = $('dh-kelas').value;
+      return { kelas: k === '__ALL__' ? kelas : [k], mode: mode };
     };
     $('dh-print').onclick = function () { var o = pick(); closeModal(); printDoc(rptDaftarHadir(d, o)); };
     $('dh-xlsx').onclick = function () { exportDaftarHadir(d, pick()); };
   }).catch(function (err) { btnLoading(btn, false); toast(err.message, 'err', 6000); });
 }
 
-function daftarHadirGroup(o, k) {
-  return o.rows.filter(function (x) { return x.KELAS === k; }).sort(function (a, b) {
-    return String(a.NAMA_SISWA).localeCompare(String(b.NAMA_SISWA), 'id');
-  });
-}
-
 function rptDaftarHadir(d, o) {
-  var st = d.settings, sig = getSig();
+  var st = d.settings, sig = getSig(), manual = o.mode === 'manual';
   var tgl = st.TANGGAL_MULAI ? fmtTanggal(st.TANGGAL_MULAI, false) : '....................................';
+  var sign = '<div class="sign"><div><p>Saksi,</p><div class="sp"></div><p><b><u>' + esc(sig.saksi1 || '..............................') + '</u></b></p></div>' +
+    '<div><p>Ketua Panitia,</p><div class="sp"></div><p><b><u>' + esc(sig.ketua || '..............................') + '</u></b></p>' + (sig.nipKetua ? '<p>NIP. ' + esc(sig.nipKetua) + '</p>' : '') + '</div></div>';
   return o.kelas.map(function (k, gi) {
-    var list = daftarHadirGroup(o, k);
-    var nonSiswa = isNonSiswa(k);
-    var hadir = list.filter(function (x) { return x.STATUS_MEMILIH === 'SUDAH MEMILIH'; }).length;
-    var filled = o.mode === 'terisi';
-    var rows = list.map(function (x, i) {
-      var n = i + 1, ok = filled && x.STATUS_MEMILIH === 'SUDAH MEMILIH';
-      var jam = ok && x.WAKTU_MEMILIH ? String(x.WAKTU_MEMILIH).slice(11, 16) : '';
-      var ttd = n % 2 === 1
-        ? '<td class="ttd">' + n + '.</td><td class="ttd"></td>'
-        : '<td class="ttd"></td><td class="ttd">' + n + '.</td>';
-      return '<tr><td class="c">' + n + '</td><td>' + esc(x.NIS) + '</td><td>' + esc(x.NAMA_SISWA) + '</td>' +
-        '<td class="c">' + esc(jam) + '</td>' + ttd +
-        '<td class="c">' + (filled ? (ok ? 'Hadir' : 'Tidak hadir') : '') + '</td></tr>';
-    }).join('');
-    return '<div' + (gi > 0 ? ' class="page-break"' : '') + '>' + kop(st) +
-      '<h3>DAFTAR HADIR PEMILIH</h3><div class="no">' + esc(st.JUDUL_PEMILIHAN) + ' Tahun ' + esc(st.TAHUN_PEMILIHAN) + '</div>' +
+    var list = daftarHadirGroup(d.students, k);
+    var nonSiswa = isNonSiswa(k), idLabel = nonSiswa ? 'NIP' : 'NIS';
+    var sudah = list.filter(function (x) { return x.STATUS_MEMILIH === 'SUDAH MEMILIH'; }).length;
+    var head = '<div' + (gi > 0 ? ' class="page-break"' : '') + '>' + kop(st) +
+      '<h3>DAFTAR HADIR PEMILIH' + (manual ? '' : ' (OTOMATIS)') + '</h3><div class="no">' + esc(st.JUDUL_PEMILIHAN) + ' Tahun ' + esc(st.TAHUN_PEMILIHAN) + '</div>' +
       '<table class="info-table" style="margin-bottom:8px"><tr><td>' + (nonSiswa ? 'Kelompok' : 'Kelas') + '</td><td>: <b>' + esc(kelasNama(k)) + '</b></td></tr>' +
       '<tr><td>Hari / Tanggal</td><td>: ' + esc(tgl) + '</td></tr>' +
       '<tr><td>Tempat</td><td>: ' + esc(st.NAMA_SEKOLAH) + '</td></tr>' +
-      '<tr><td>Jumlah pemilih</td><td>: ' + list.length + ' orang</td></tr></table>' +
-      '<table class="ptable dh-table"><thead><tr><th class="c" style="width:32px">No</th><th style="width:' + (nonSiswa ? 150 : 92) + 'px">' + (nonSiswa ? 'NIP' : 'NIS') + '</th>' +
-      '<th>Nama</th><th class="c" style="width:56px">Jam</th><th class="c" colspan="2" style="width:176px">Tanda Tangan</th><th class="c" style="width:84px">Ket.</th></tr></thead>' +
-      '<tbody>' + rows + '</tbody></table>' +
-      '<p>Jumlah pemilih yang hadir dan memberikan suara: <b>' + (filled ? hadir : '..........') + '</b> dari ' + list.length + ' orang.</p>' +
-      '<p style="text-align:right;margin-top:12px">' + esc(sig.tempat || 'Lembah Sumara') + ', ' + (filled ? esc(fmtTglPendek(d.generatedAt)) : '..............................') + '</p>' +
-      '<div class="sign"><div><p>Saksi,</p><div class="sp"></div><p><b><u>' + esc(sig.saksi1 || '..............................') + '</u></b></p></div>' +
-      '<div><p>Ketua Panitia,</p><div class="sp"></div><p><b><u>' + esc(sig.ketua || '..............................') + '</u></b></p>' + (sig.nipKetua ? '<p>NIP. ' + esc(sig.nipKetua) + '</p>' : '') + '</div></div>' +
-      '</div>';
+      '<tr><td>Jumlah pemilih</td><td>: ' + list.length + ' orang</td></tr>' +
+      (manual ? '' : '<tr><td>Data per</td><td>: ' + esc(d.generatedAt) + ' (dari aplikasi E-Voting)</td></tr>') + '</table>';
+    var table, foot;
+    if (manual) {
+      table = '<table class="ptable dh-table"><thead><tr><th class="c" style="width:40px">No. Urut</th><th style="width:' + (nonSiswa ? 140 : 84) + 'px">' + idLabel + '</th>' +
+        '<th>Nama</th><th class="c" style="width:44px">Hadir</th><th class="c" colspan="2" style="width:176px">Tanda Tangan</th><th class="c" style="width:64px">Ket.</th></tr></thead><tbody>' +
+        list.map(function (x, i) {
+          var n = i + 1;
+          var ttd = n % 2 === 1 ? '<td class="ttd">' + n + '.</td><td class="ttd"></td>' : '<td class="ttd"></td><td class="ttd">' + n + '.</td>';
+          return '<tr><td class="c"><b>' + n + '</b></td><td>' + esc(x.NIS) + '</td><td>' + esc(x.NAMA_SISWA) + '</td><td class="c"><span class="cbx"></span></td>' + ttd + '<td></td></tr>';
+        }).join('') + '</tbody></table>';
+      foot = '<p>Jumlah pemilih hadir: .......... orang. Tidak hadir: .......... orang.</p>' +
+        '<p style="text-align:right;margin-top:12px">' + esc(sig.tempat || 'Lembah Sumara') + ', ..............................</p>';
+    } else {
+      table = '<table class="ptable dh-table"><thead><tr><th class="c" style="width:40px">No. Urut</th><th style="width:' + (nonSiswa ? 140 : 84) + 'px">' + idLabel + '</th>' +
+        '<th>Nama</th><th class="c" style="width:110px">Status</th><th class="c" style="width:170px">Waktu Memilih</th></tr></thead><tbody>' +
+        list.map(function (x, i) {
+          var ok = x.STATUS_MEMILIH === 'SUDAH MEMILIH';
+          return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.NIS) + '</td><td>' + esc(x.NAMA_SISWA) + '</td>' +
+            '<td class="c">' + (ok ? '<b>Sudah memilih</b>' : 'Belum memilih') + '</td><td class="c" style="white-space:nowrap">' + (ok ? esc(fmtTglPendek(x.WAKTU_MEMILIH)) + ', ' + esc(jamOf(x)) : '-') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      foot = '<p>Sudah memilih: <b>' + sudah + '</b> orang. Belum memilih: <b>' + (list.length - sudah) + '</b> orang. Partisipasi: <b>' +
+        (list.length ? Math.round(sudah / list.length * 1000) / 10 : 0) + '%</b>.</p>' +
+        '<p style="text-align:right;margin-top:12px">' + esc(sig.tempat || 'Lembah Sumara') + ', ' + esc(fmtTglPendek(d.generatedAt)) + '</p>';
+    }
+    return head + table + foot + sign + '</div>';
   }).join('');
 }
 
 function exportDaftarHadir(d, o) {
   ensureXlsx().then(function () {
-    var wb = XLSX.utils.book_new(), filled = o.mode === 'terisi';
+    var wb = XLSX.utils.book_new(), manual = o.mode === 'manual';
     o.kelas.forEach(function (k) {
-      var list = daftarHadirGroup(o, k);
-      var aoa = [['DAFTAR HADIR PEMILIH — ' + d.settings.JUDUL_PEMILIHAN + ' ' + d.settings.TAHUN_PEMILIHAN],
-        [d.settings.NAMA_SEKOLAH], [(isNonSiswa(k) ? 'Kelompok: ' : 'Kelas: ') + kelasNama(k)], [],
-        ['NO', isNonSiswa(k) ? 'NIP' : 'NIS', 'NAMA', 'JAM', 'TANDA TANGAN', 'KETERANGAN']];
+      var list = daftarHadirGroup(d.students, k), idLabel = isNonSiswa(k) ? 'NIP' : 'NIS';
+      var aoa = [['DAFTAR HADIR PEMILIH ' + (manual ? '(MANUAL)' : '(OTOMATIS)') + ' — ' + d.settings.JUDUL_PEMILIHAN + ' ' + d.settings.TAHUN_PEMILIHAN],
+        [d.settings.NAMA_SEKOLAH], [(isNonSiswa(k) ? 'Kelompok: ' : 'Kelas: ') + kelasNama(k)], manual ? [] : ['Data per ' + d.generatedAt], [],
+        manual ? ['NO. URUT', idLabel, 'NAMA', 'HADIR', 'TANDA TANGAN', 'KETERANGAN'] : ['NO. URUT', idLabel, 'NAMA', 'STATUS', 'WAKTU MEMILIH']];
       list.forEach(function (x, i) {
-        var ok = filled && x.STATUS_MEMILIH === 'SUDAH MEMILIH';
-        aoa.push([i + 1, x.NIS, x.NAMA_SISWA, ok && x.WAKTU_MEMILIH ? String(x.WAKTU_MEMILIH).slice(11, 16) : '', '', filled ? (ok ? 'Hadir' : 'Tidak hadir') : '']);
+        var ok = x.STATUS_MEMILIH === 'SUDAH MEMILIH';
+        aoa.push(manual ? [i + 1, x.NIS, x.NAMA_SISWA, '', '', ''] : [i + 1, x.NIS, x.NAMA_SISWA, ok ? 'Sudah memilih' : 'Belum memilih', ok ? x.WAKTU_MEMILIH : '']);
       });
       var ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 5 }, { wch: 20 }, { wch: 34 }, { wch: 8 }, { wch: 24 }, { wch: 14 }];
+      ws['!cols'] = [{ wch: 9 }, { wch: 20 }, { wch: 34 }, { wch: 15 }, { wch: 22 }, { wch: 14 }];
       XLSX.utils.book_append_sheet(wb, ws, kelasNama(k).replace(/[\\\/\?\*\[\]:]/g, '-').slice(0, 31));
     });
-    XLSX.writeFile(wb, 'Daftar_Hadir_Pemilih_' + stamp() + '.xlsx');
+    XLSX.writeFile(wb, 'Daftar_Hadir_' + (manual ? 'Manual' : 'Otomatis') + '_' + stamp() + '.xlsx');
     toast('File Excel diunduh.', 'ok');
   }).catch(function (err) { toast(err.message, 'err'); });
+}
+
+/* ---------- MENU DAFTAR HADIR (otomatis, untuk memandu pemanggilan) ---------- */
+PAGES.hadir = function (el, my) {
+  S.dh = S.dh || { kelas: '' };
+  return api('getStudents', tok()).then(function (list) {
+    if (stale(my)) return;
+    S.dhStudents = list || [];
+    var kelas = dhKelasList(S.dhStudents);
+    if (!kelas.length) { el.innerHTML = '<div class="card empty"><i class="fa-solid fa-users-slash"></i>Belum ada data pemilih aktif.</div>'; return; }
+    if (kelas.indexOf(S.dh.kelas) === -1) S.dh.kelas = kelas[0];
+    el.innerHTML =
+      '<div class="alert alert-info"><i class="fa-solid fa-bullhorn"></i><span>Panggil pemilih sesuai <b>No. Urut</b> pada Daftar Hadir Manual. Daftar di bawah ini <b>terisi otomatis</b> begitu pemilih selesai mengirim suara, dan diperbarui setiap 10 detik.</span></div>' +
+      '<div class="toolbar"><select class="select" id="dh-sel">' + kelas.map(function (k) { return '<option value="' + esc(k) + '"' + (k === S.dh.kelas ? ' selected' : '') + '>' + esc(kelasLabel(k)) + '</option>'; }).join('') + '</select>' +
+      '<label class="flex small" style="cursor:pointer"><input type="checkbox" id="dh-auto" checked> Perbarui otomatis</label>' +
+      '<button class="btn btn-light btn-sm" id="dh-now"><i class="fa-solid fa-rotate"></i> Perbarui</button><span class="grow"></span>' +
+      '<button class="btn btn-light btn-sm" id="dh-pm"><i class="fa-solid fa-clipboard-list"></i> Cetak Manual</button>' +
+      '<button class="btn btn-light btn-sm" id="dh-po"><i class="fa-solid fa-clipboard-check"></i> Cetak Otomatis</button></div>' +
+      '<div id="dh-next"></div><div class="stats four" id="dh-stats"></div>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th style="width:70px">No. Urut</th><th>NIS / NIP</th><th>Nama</th><th>Status</th><th>Jam Memilih</th></tr></thead><tbody id="dh-body"></tbody></table></div>' +
+      '<p class="small muted mt-1" id="dh-time"></p>';
+    $('dh-sel').onchange = function () { S.dh.kelas = this.value; renderHadir(); };
+    $('dh-now').onclick = function () { loadHadir(my); };
+    $('dh-auto').onchange = function () { stopMonitor(); if (this.checked) S.monitorTimer = setInterval(function () { loadHadir(my); }, 10000); };
+    $('dh-pm').onclick = function () { openDaftarHadir(this, 'manual', S.dh.kelas); };
+    $('dh-po').onclick = function () { openDaftarHadir(this, 'otomatis', S.dh.kelas); };
+    S.monitorTimer = setInterval(function () { loadHadir(my); }, 10000);
+    S.dhUpdated = nowStamp();
+    renderHadir();
+  });
+};
+
+function loadHadir(my) {
+  return api('getStudents', tok()).then(function (list) {
+    if (stale(my)) return;
+    S.dhStudents = list || [];
+    S.dhUpdated = nowStamp();
+    renderHadir();
+  }).catch(function (err) { if (!stale(my) && S.adminToken) toast('Gagal memperbarui daftar hadir: ' + err.message, 'err'); });
+}
+
+function renderHadir() {
+  if (!$('dh-body')) return;
+  var list = daftarHadirGroup(S.dhStudents, S.dh.kelas);
+  var sudah = list.filter(function (x) { return x.STATUS_MEMILIH === 'SUDAH MEMILIH'; }).length;
+  var nextIdx = -1;
+  for (var i = 0; i < list.length; i++) { if (list[i].STATUS_MEMILIH !== 'SUDAH MEMILIH') { nextIdx = i; break; } }
+  $('dh-stats').innerHTML =
+    statCard('fa-users', 'Jumlah Pemilih', num(list.length)) +
+    statCard('fa-circle-check', 'Sudah Memilih', num(sudah), 'ok') +
+    statCard('fa-hourglass-half', 'Belum Memilih', num(list.length - sudah), 'warn') +
+    statCard('fa-percent', 'Kehadiran', (list.length ? Math.round(sudah / list.length * 1000) / 10 : 0) + '%', 'navy');
+  $('dh-next').innerHTML = nextIdx === -1
+    ? '<div class="alert alert-ok"><i class="fa-solid fa-circle-check"></i><span><b>Semua pemilih di ' + esc(kelasLabel(S.dh.kelas)) + ' sudah memilih.</b></span></div>'
+    : '<div class="status-hero" style="padding:12px 16px"><div class="grow"><p style="opacity:.85">Panggil berikutnya</p><h2>No. ' + (nextIdx + 1) + ' — ' + esc(list[nextIdx].NAMA_SISWA) + '</h2><p>' + esc(kelasLabel(S.dh.kelas)) + ' · ' + (isNonSiswa(S.dh.kelas) ? 'NIP ' : 'NIS ') + esc(list[nextIdx].NIS) + '</p></div></div>';
+  $('dh-body').innerHTML = list.map(function (x, i) {
+    var ok = x.STATUS_MEMILIH === 'SUDAH MEMILIH', isNext = i === nextIdx;
+    return '<tr' + (isNext ? ' style="background:var(--sky-soft)"' : '') + '><td><b>' + (i + 1) + '</b></td><td>' + esc(x.NIS) + '</td><td><b>' + esc(x.NAMA_SISWA) + '</b>' +
+      (isNext ? ' <span class="badge badge-info"><i class="fa-solid fa-bullhorn"></i> PANGGIL</span>' : '') + '</td>' +
+      '<td>' + (ok ? '<span class="badge badge-ok"><i class="fa-solid fa-check"></i> SUDAH MEMILIH</span>' : '<span class="badge badge-warn">BELUM</span>') + '</td>' +
+      '<td>' + (ok ? esc(jamOf(x)) : '-') + '</td></tr>';
+  }).join('');
+  $('dh-time').textContent = 'Diperbarui ' + S.dhUpdated + '. Nomor urut = urutan nama, sama dengan Daftar Hadir Manual yang dicetak.';
 }
 
 function resultTable(r) {
