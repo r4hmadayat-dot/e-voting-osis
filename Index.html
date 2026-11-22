@@ -584,14 +584,14 @@ table.tbl{font-size:12px}
     <div id="login-status" class="status-banner alert-info"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Memeriksa status pemilihan...</span></div>
 
     <h2>Masuk untuk Memilih</h2>
-    <p class="lead">Gunakan NIS atau NISN dan PIN voting yang dibagikan oleh panitia.</p>
+    <p class="lead">Siswa: gunakan NIS/NISN. Guru &amp; staf: gunakan NIP. Masukkan juga PIN dari kartu pemilih.</p>
 
     <form id="form-login-siswa" autocomplete="off" novalidate>
       <div class="field">
-        <label for="in-nis">NIS / NISN</label>
+        <label for="in-nis">NIS / NISN / NIP</label>
         <div class="input-icon">
           <i class="fa-solid fa-id-card"></i>
-          <input id="in-nis" class="input" inputmode="numeric" placeholder="Masukkan NIS atau NISN" maxlength="20" autocomplete="off">
+          <input id="in-nis" class="input" inputmode="numeric" placeholder="Masukkan NIS, NISN, atau NIP" maxlength="20" autocomplete="off">
         </div>
       </div>
       <div class="field">
@@ -609,7 +609,7 @@ table.tbl{font-size:12px}
     </form>
 
     <div class="help-steps">
-      <div><b>1</b><span>Masukkan <strong>NIS/NISN</strong> dan <strong>PIN</strong> dari kartu pemilih.</span></div>
+      <div><b>1</b><span>Masukkan <strong>NIS/NISN/NIP</strong> dan <strong>PIN</strong> dari kartu pemilih.</span></div>
       <div><b>2</b><span>Baca visi, misi, dan program kerja setiap pasangan calon.</span></div>
       <div><b>3</b><span>Tekan <strong>PILIH PASANGAN INI</strong>, lalu konfirmasi. Suara hanya bisa dikirim <strong>satu kali</strong>.</span></div>
     </div>
@@ -672,7 +672,7 @@ table.tbl{font-size:12px}
       <div class="av" id="v-avatar">?</div>
       <div>
         <h2>Halo, <span id="v-nama">Siswa</span>!</h2>
-        <p>Kelas <span id="v-kelas">-</span> &middot; Gunakan hak suaramu dengan jujur dan bertanggung jawab.</p>
+        <p><span id="v-kelas">-</span> &middot; Gunakan hak suara dengan jujur dan bertanggung jawab.</p>
       </div>
     </div>
 
@@ -828,6 +828,33 @@ function initials(name) {
 function cleanErr(msg) { return String(msg || '').replace(/^(Error|Exception):\s*/i, '').replace(/^[A-Z_]{5,}:\s*/, ''); }
 function debounce(fn, ms) { var t; return function () { var a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, ms); }; }
 function num(n) { return Number(n || 0).toLocaleString('id-ID'); }
+
+/* ---------- Jenis pemilih: siswa / guru / staf (ditandai lewat kolom KELAS) ---------- */
+function jenisOf(kelas) {
+  var k = String(kelas || '').trim().toUpperCase();
+  return k === 'GURU' ? 'GURU' : k === 'STAF' ? 'STAF' : 'SISWA';
+}
+function isNonSiswa(kelas) { return jenisOf(kelas) !== 'SISWA'; }
+/** Label kelas yang ramah: "Kelas VII A", "Guru", atau "Staf". */
+function kelasLabel(kelas) {
+  var j = jenisOf(kelas);
+  return j === 'GURU' ? 'Guru' : j === 'STAF' ? 'Staf' : 'Kelas ' + kelas;
+}
+/** Urutkan: kelas siswa dulu, lalu GURU, lalu STAF. */
+function orderKelas(arr, getKelas) {
+  var rank = function (k) { var j = jenisOf(k); return j === 'SISWA' ? 0 : j === 'GURU' ? 1 : 2; };
+  return arr.slice().sort(function (a, b) {
+    var ka = getKelas ? getKelas(a) : a, kb = getKelas ? getKelas(b) : b;
+    return (rank(ka) - rank(kb)) || String(ka).localeCompare(String(kb), 'id', { numeric: true });
+  });
+}
+function kelasNama(k) { var j = jenisOf(k); return j === 'GURU' ? 'Guru' : j === 'STAF' ? 'Staf' : k; }
+function jenisBadge(kelas) {
+  var j = jenisOf(kelas);
+  if (j === 'GURU') return '<span class="badge badge-info"><i class="fa-solid fa-chalkboard-user"></i> GURU</span>';
+  if (j === 'STAF') return '<span class="badge badge-muted"><i class="fa-solid fa-briefcase"></i> STAF</span>';
+  return esc(kelas);
+}
 
 var store = {
   get: function (k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
@@ -1117,7 +1144,7 @@ function onLoginSiswa(e) {
   e.preventDefault();
   var nis = $('in-nis').value.trim(), pin = $('in-pin').value.trim();
   hideLoginMsg();
-  if (!nis || !pin) return showLoginMsg('warn', 'NIS/NISN dan PIN wajib diisi.');
+  if (!nis || !pin) return showLoginMsg('warn', 'NIS/NISN/NIP dan PIN wajib diisi.');
   var btn = $('btn-login-siswa');
   btnLoading(btn, true, 'Memeriksa...');
   api('loginSiswa', nis, pin).then(function (r) {
@@ -1149,7 +1176,7 @@ function loadVoting() {
     loader(false);
     S.candidates = list || [];
     $('v-nama').textContent = S.student.NAMA_SISWA;
-    $('v-kelas').textContent = S.student.KELAS;
+    $('v-kelas').textContent = kelasLabel(S.student.KELAS);
     $('v-avatar').textContent = initials(S.student.NAMA_SISWA);
     renderCandidates();
     showView('view-voting');
@@ -1298,7 +1325,7 @@ function logoutSiswa() {
    ================================================================== */
 var NAV = [
   { id: 'beranda', label: 'Beranda', sub: 'Ringkasan pemilihan', icon: 'fa-house' },
-  { id: 'siswa', label: 'Data Siswa', sub: 'Kelola daftar pemilih', icon: 'fa-user-graduate' },
+  { id: 'siswa', label: 'Data Pemilih', sub: 'Siswa, guru, dan staf', icon: 'fa-user-graduate' },
   { id: 'kandidat', label: 'Data Kandidat', sub: 'Pasangan calon ketua & wakil', icon: 'fa-people-group' },
   { id: 'monitoring', label: 'Monitoring Voting', sub: 'Partisipasi secara langsung', icon: 'fa-chart-line' },
   { id: 'hasil', label: 'Hasil Voting', sub: 'Perolehan suara akhir', icon: 'fa-square-poll-vertical' },
@@ -1470,7 +1497,7 @@ function kelasChart(canvasId, perKelas) {
   S.charts[canvasId] = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: perKelas.map(function (k) { return k.kelas; }),
+      labels: perKelas.map(function (k) { return kelasNama(k.kelas); }),
       datasets: [
         { label: 'Sudah memilih', data: perKelas.map(function (k) { return k.sudah; }), backgroundColor: '#0b2a5b', borderRadius: 6 },
         { label: 'Belum memilih', data: perKelas.map(function (k) { return k.belum; }), backgroundColor: '#bcdcfb', borderRadius: 6 }
@@ -1497,10 +1524,11 @@ PAGES.beranda = function (el, my) {
     if (stale(my)) return;
     applySettings(d.settings);
     var s = d.stats, st = d.settings;
+    s.perKelas = orderKelas(s.perKelas, function (k) { return k.kelas; });
     var statusTxt = st.STATUS_VOTING === 'DIBUKA' ? 'DIBUKA' : st.STATUS_VOTING;
     el.innerHTML = statusHero(st) +
       '<div class="stats six">' +
-      statCard('fa-users', 'Total Siswa Terdaftar', num(s.totalTerdaftar)) +
+      statCard('fa-users', 'Total Pemilih Terdaftar', num(s.totalTerdaftar)) +
       statCard('fa-circle-check', 'Sudah Memilih', num(s.sudah), 'ok') +
       statCard('fa-hourglass-half', 'Belum Memilih', num(s.belum), 'warn') +
       statCard('fa-percent', 'Partisipasi', s.partisipasi + '%', 'navy') +
@@ -1532,23 +1560,25 @@ PAGES.beranda = function (el, my) {
 PAGES.siswa = function (el, my) {
   return api('getStudents', tok()).then(function (list) {
     if (stale(my)) return;
-    S.students = list || [];
+    S.students = orderKelas(list || [], function (x) { return x.KELAS; });
     S.sf = { q: '', kelas: '', status: '', page: 1 };
     var kelas = uniq(S.students.map(function (x) { return x.KELAS; }));
     el.innerHTML =
       '<div class="toolbar">' +
       '<div class="input-icon search"><i class="fa-solid fa-magnifying-glass"></i><input class="input" id="sf-q" placeholder="Cari nama, NIS, atau NISN..."></div>' +
-      '<select class="select" id="sf-kelas"><option value="">Semua Kelas</option>' + kelas.map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('') + '</select>' +
+      '<select class="select" id="sf-kelas"><option value="">Semua Pemilih</option>' +
+      '<optgroup label="Jenis"><option value="__SISWA__">Siswa saja</option><option value="GURU">Guru</option><option value="STAF">Staf</option></optgroup>' +
+      '<optgroup label="Kelas">' + kelas.filter(function (k) { return !isNonSiswa(k); }).map(function (k) { return '<option>' + esc(k) + '</option>'; }).join('') + '</optgroup></select>' +
       '<select class="select" id="sf-status"><option value="">Semua Status</option><option>SUDAH MEMILIH</option><option>BELUM MEMILIH</option><option value="NONAKTIF">AKUN NONAKTIF</option></select>' +
       '</div>' +
       '<div class="toolbar">' +
-      '<button class="btn btn-primary" id="sf-add"><i class="fa-solid fa-user-plus"></i> Tambah Siswa</button>' +
+      '<button class="btn btn-primary" id="sf-add"><i class="fa-solid fa-user-plus"></i> Tambah Pemilih</button>' +
       '<button class="btn btn-light" id="sf-import"><i class="fa-solid fa-file-import"></i> Import Excel/CSV</button>' +
       (isSuper() ? '<button class="btn btn-light" id="sf-cards"><i class="fa-solid fa-id-card"></i> Kartu PIN per Kelas</button>' +
         '<button class="btn btn-outline" id="sf-reset" style="color:var(--danger)"><i class="fa-solid fa-rotate-left"></i> Reset Status Memilih</button>' : '') +
       '<span class="grow"></span><span class="muted small" id="sf-count"></span></div>' +
-      '<div class="alert alert-info small"><i class="fa-solid fa-lock"></i><span>PIN siswa disimpan dalam bentuk hash dan tidak pernah ditampilkan di dashboard. PIN baru hanya muncul <b>sekali</b> saat dibuat atau direset.</span></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th>No</th><th>NIS</th><th>NISN</th><th>Nama Siswa</th><th>Kelas</th><th>Akun</th><th>Status Memilih</th><th style="text-align:right">Aksi</th></tr></thead>' +
+      '<div class="alert alert-info small"><i class="fa-solid fa-lock"></i><span>PIN pemilih disimpan dalam bentuk hash dan tidak pernah ditampilkan di dashboard. PIN baru hanya muncul <b>sekali</b> saat dibuat atau direset.</span></div>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th>No</th><th>NIS / NIP</th><th>NISN</th><th>Nama</th><th>Kelas / Jenis</th><th>Akun</th><th>Status Memilih</th><th style="text-align:right">Aksi</th></tr></thead>' +
       '<tbody id="sf-body"></tbody></table><div class="pager" id="sf-pager"></div></div>';
 
     var refilter = debounce(function () {
@@ -1591,7 +1621,8 @@ PAGES.siswa = function (el, my) {
 function filteredStudents() {
   var f = S.sf;
   return S.students.filter(function (s) {
-    if (f.kelas && s.KELAS !== f.kelas) return false;
+    if (f.kelas === '__SISWA__') { if (isNonSiswa(s.KELAS)) return false; }
+    else if (f.kelas && s.KELAS !== f.kelas) return false;
     if (f.status === 'NONAKTIF' && s.STATUS_AKUN !== 'NONAKTIF') return false;
     if (f.status && f.status !== 'NONAKTIF' && s.STATUS_MEMILIH !== f.status) return false;
     if (f.q) {
@@ -1608,11 +1639,11 @@ function renderStudentRows() {
   if (S.sf.page > pages) S.sf.page = pages;
   var start = (S.sf.page - 1) * size;
   var rows = list.slice(start, start + size);
-  $('sf-count').textContent = num(list.length) + ' dari ' + num(S.students.length) + ' siswa';
+  $('sf-count').textContent = num(list.length) + ' dari ' + num(S.students.length) + ' pemilih';
   $('sf-body').innerHTML = rows.length ? rows.map(function (s, i) {
     var voted = s.STATUS_MEMILIH === 'SUDAH MEMILIH';
     return '<tr><td>' + (start + i + 1) + '</td><td>' + esc(s.NIS) + '</td><td>' + esc(s.NISN || '-') + '</td>' +
-      '<td><b>' + esc(s.NAMA_SISWA) + '</b></td><td>' + esc(s.KELAS) + '</td>' +
+      '<td><b>' + esc(s.NAMA_SISWA) + '</b></td><td>' + jenisBadge(s.KELAS) + '</td>' +
       '<td>' + (s.STATUS_AKUN === 'NONAKTIF' ? '<span class="badge badge-muted">NONAKTIF</span>' : '<span class="badge badge-info">AKTIF</span>') + '</td>' +
       '<td>' + (voted ? '<span class="badge badge-ok"><i class="fa-solid fa-check"></i> SUDAH</span><div class="small muted">' + esc(s.WAKTU_MEMILIH) + '</div>' : '<span class="badge badge-warn">BELUM</span>') + '</td>' +
       '<td><div class="acts">' +
@@ -1633,29 +1664,50 @@ function renderStudentRows() {
 function openStudentForm(st) {
   var isNew = !st;
   st = st || { NIS: '', NISN: '', NAMA_SISWA: '', KELAS: '', STATUS_AKUN: 'AKTIF' };
+  var jenis = isNew ? 'SISWA' : jenisOf(st.KELAS);
+  var opt = function (v, t) { return '<option value="' + v + '"' + (jenis === v ? ' selected' : '') + '>' + t + '</option>'; };
   openModal({
-    title: isNew ? '<i class="fa-solid fa-user-plus"></i> Tambah Siswa' : '<i class="fa-solid fa-pen"></i> Edit Siswa',
+    title: isNew ? '<i class="fa-solid fa-user-plus"></i> Tambah Pemilih' : '<i class="fa-solid fa-pen"></i> Edit Pemilih',
     body: '<div class="grid-form">' +
-      '<div class="field"><label>NIS *</label><input class="input" id="fs-nis" maxlength="20" inputmode="numeric" value="' + esc(st.NIS) + '"></div>' +
-      '<div class="field"><label>NISN</label><input class="input" id="fs-nisn" maxlength="20" inputmode="numeric" value="' + esc(st.NISN) + '"></div>' +
+      '<div class="field full"><label>Jenis Pemilih *</label><select class="select" id="fs-jenis">' + opt('SISWA', 'Siswa') + opt('GURU', 'Guru') + opt('STAF', 'Staf / Tenaga Kependidikan') + '</select></div>' +
+      '<div class="field"><label id="fs-nis-label">NIS *</label><input class="input" id="fs-nis" maxlength="20" value="' + esc(st.NIS) + '"><div class="hint" id="fs-nis-hint"></div></div>' +
+      '<div class="field" id="fs-nisn-wrap"><label>NISN</label><input class="input" id="fs-nisn" maxlength="20" inputmode="numeric" value="' + esc(st.NISN) + '"></div>' +
       '<div class="field full"><label>Nama Lengkap *</label><input class="input" id="fs-nama" maxlength="100" value="' + esc(st.NAMA_SISWA) + '"></div>' +
-      '<div class="field"><label>Kelas *</label><input class="input" id="fs-kelas" maxlength="20" placeholder="Contoh: VIII A" value="' + esc(st.KELAS) + '"></div>' +
+      '<div class="field" id="fs-kelas-wrap"><label>Kelas *</label><input class="input" id="fs-kelas" maxlength="20" placeholder="Contoh: VIII A" value="' + esc(isNonSiswa(st.KELAS) ? '' : st.KELAS) + '"></div>' +
       (isNew
         ? '<div class="field"><label>PIN (opsional)</label><input class="input" id="fs-pin" maxlength="8" inputmode="numeric" placeholder="Kosongkan = otomatis"><div class="hint">4–8 digit angka.</div></div>'
         : '<div class="field"><label>Status Akun</label><select class="select" id="fs-status"><option' + (st.STATUS_AKUN !== 'NONAKTIF' ? ' selected' : '') + '>AKTIF</option><option' + (st.STATUS_AKUN === 'NONAKTIF' ? ' selected' : '') + '>NONAKTIF</option></select></div>') +
       '</div>',
     footer: '<button class="btn btn-outline" onclick="closeModal()">Batal</button><button class="btn btn-primary" id="fs-save"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>'
   });
+  function syncJenis() {
+    var j = $('fs-jenis').value, siswa = j === 'SISWA';
+    $('fs-nis-label').textContent = siswa ? 'NIS *' : 'NIP *';
+    $('fs-nis-hint').textContent = siswa ? '' : (j === 'GURU' ? 'Isi NIP guru tanpa spasi. Jika tidak ada NIP, isi kode unik, misal GURU-001.' : 'Isi NIP, atau kode unik seperti STAF-001.');
+    $('fs-nis').setAttribute('inputmode', siswa ? 'numeric' : 'text');
+    $('fs-nisn-wrap').style.display = siswa ? '' : 'none';
+    $('fs-kelas-wrap').style.display = siswa ? '' : 'none';
+  }
+  $('fs-jenis').onchange = syncJenis;
+  syncJenis();
   $('fs-save').onclick = function () {
-    var d = { NIS: $('fs-nis').value, NISN: $('fs-nisn').value, NAMA_SISWA: $('fs-nama').value, KELAS: $('fs-kelas').value };
-    if (!d.NIS.trim() || !d.NAMA_SISWA.trim() || !d.KELAS.trim()) return toast('NIS, nama, dan kelas wajib diisi.', 'err');
+    var j = $('fs-jenis').value, siswa = j === 'SISWA';
+    var d = {
+      NIS: $('fs-nis').value, NISN: siswa ? $('fs-nisn').value : '',
+      NAMA_SISWA: $('fs-nama').value, KELAS: siswa ? $('fs-kelas').value : j
+    };
+    if (!d.NIS.trim() || !d.NAMA_SISWA.trim() || !d.KELAS.trim()) {
+      return toast(siswa ? 'NIS, nama, dan kelas wajib diisi.' : 'NIP dan nama wajib diisi.', 'err');
+    }
+    if (siswa && isNonSiswa(d.KELAS)) return toast('Untuk guru/staf, pilih Jenis Pemilih yang sesuai.', 'err');
     var b = this;
     btnLoading(b, true, 'Menyimpan...');
     var call = isNew ? (d.PIN = $('fs-pin').value, api('addStudent', tok(), d))
       : (d.ID_SISWA = st.ID_SISWA, d.STATUS_AKUN = $('fs-status').value, api('updateStudent', tok(), d));
+    var namaJenis = siswa ? 'Siswa' : (j === 'GURU' ? 'Guru' : 'Staf');
     call.then(function (r) {
-      toast(isNew ? 'Siswa berhasil ditambahkan.' : 'Data siswa diperbarui.', 'ok');
-      if (isNew) showPinResult([r], 'PIN Siswa Baru');
+      toast(isNew ? namaJenis + ' berhasil ditambahkan.' : 'Data pemilih diperbarui.', 'ok');
+      if (isNew) showPinResult([r], 'PIN ' + namaJenis + ' Baru');
       else closeModal();
       refreshStudents();
     }).catch(function (err) { btnLoading(b, false); toast(err.message, 'err', 6000); });
@@ -1665,7 +1717,7 @@ function openStudentForm(st) {
 function refreshStudents() {
   return api('getStudents', tok()).then(function (list) {
     if (S.page !== 'siswa') return;
-    S.students = list;
+    S.students = orderKelas(list, function (x) { return x.KELAS; });
     renderStudentRows();
   }).catch(function () { });
 }
@@ -1702,7 +1754,7 @@ function showPinResult(list, title) {
     size: 'lg',
     closable: true,
     body: '<div class="alert alert-warn"><i class="fa-solid fa-triangle-exclamation"></i><span><b>PIN hanya ditampilkan sekali.</b> Cetak kartu atau unduh daftar sekarang, lalu bagikan kepada siswa secara langsung.</span></div>' +
-      '<div class="table-wrap"><table class="tbl pin-table" style="min-width:480px"><thead><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kelas</th><th>PIN</th></tr></thead><tbody>' +
+      '<div class="table-wrap"><table class="tbl pin-table" style="min-width:480px"><thead><tr><th>No</th><th>NIS / NIP</th><th>Nama</th><th>Kelas / Jenis</th><th>PIN</th></tr></thead><tbody>' +
       S.lastPins.map(function (p, i) {
         return '<tr><td>' + (i + 1) + '</td><td>' + esc(p.NIS) + '</td><td>' + esc(p.NAMA_SISWA) + '</td><td>' + esc(p.KELAS) + '</td><td class="pin">' + esc(p.PIN) + '</td></tr>';
       }).join('') + '</tbody></table></div>',
@@ -1751,7 +1803,7 @@ function openPinCardsByClass() {
     btnLoading(b, true, 'Membuat ' + ids.length + ' PIN...');
     api('regeneratePins', tok(), ids).then(function (list) {
       toast(list.length + ' PIN baru dibuat.', 'ok');
-      showPinResult(list, 'Kartu PIN ' + (k === '__ALL__' ? 'Semua Kelas' : 'Kelas ' + k));
+      showPinResult(list, 'Kartu PIN ' + (k === '__ALL__' ? 'Semua Pemilih' : kelasLabel(k)));
     }).catch(function (err) { btnLoading(b, false); toast(err.message, 'err'); });
   };
 }
@@ -1886,7 +1938,8 @@ function downloadTemplate() {
       ['2. NIS wajib, unik, tanpa spasi. NISN opsional (angka).'],
       ['3. KELAS contoh: VII A, VIII B, IX C.'],
       ['4. PIN opsional (4-8 digit angka). Kosongkan agar dibuat otomatis.'],
-      ['5. Simpan, lalu import melalui menu Data Siswa > Import Excel/CSV.']
+      ['5. Guru: NIS diisi NIP, NISN dikosongkan, KELAS diisi GURU. Staf: KELAS diisi STAF.'],
+      ['6. Simpan, lalu import melalui menu Data Pemilih > Import Excel/CSV.']
     ]);
     info['!cols'] = [{ wch: 80 }];
     var wb = XLSX.utils.book_new();
@@ -2026,7 +2079,7 @@ PAGES.monitoring = function (el, my) {
     '<div id="mn-status"></div><div class="stats four" id="mn-stats"></div>' +
     '<div class="grid-2 wide-left"><div class="card"><h3><i class="fa-solid fa-chart-column"></i> Grafik Partisipasi per Kelas</h3><div class="chart-box"><canvas id="ch-monitor"></canvas></div></div>' +
     '<div class="card"><h3><i class="fa-solid fa-chart-pie"></i> Partisipasi Keseluruhan</h3><div class="chart-box sm"><canvas id="ch-monitor-pie"></canvas></div></div></div>' +
-    '<div class="card mt-2"><h3><i class="fa-solid fa-table"></i> Rekap per Kelas</h3><div class="table-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>Kelas</th><th>Jumlah Siswa</th><th>Sudah</th><th>Belum</th><th style="width:35%">Partisipasi</th></tr></thead><tbody id="mn-body"></tbody></table></div></div>' +
+    '<div class="card mt-2"><h3><i class="fa-solid fa-table"></i> Rekap per Kelas</h3><div class="table-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>Kelas / Jenis</th><th>Jumlah</th><th>Sudah</th><th>Belum</th><th style="width:35%">Partisipasi</th></tr></thead><tbody id="mn-body"></tbody></table></div></div>' +
     '<div class="alert alert-info mt-2"><i class="fa-solid fa-user-secret"></i><span>Monitoring hanya menampilkan partisipasi. Perolehan suara kandidat dirahasiakan sampai voting ditutup.</span></div>';
   $('mn-now').onclick = function () { loadMonitor(my); };
   $('mn-auto').onchange = function () {
@@ -2041,6 +2094,7 @@ function loadMonitor(my) {
   return api('getVotingStatistics', tok()).then(function (d) {
     if (stale(my)) return;
     var s = d.stats;
+    s.perKelas = orderKelas(s.perKelas, function (k) { return k.kelas; });
     applySettings(d.settings);
     $('mn-time').innerHTML = '<i class="fa-solid fa-clock"></i> Diperbarui ' + esc(s.updatedAt);
     $('mn-status').innerHTML = statusHero(d.settings);
@@ -2051,7 +2105,7 @@ function loadMonitor(my) {
       statCard('fa-hourglass-half', 'Siswa Belum Memilih', num(s.belum), 'warn') +
       statCard('fa-users', 'Daftar Pemilih (aktif)', num(s.totalDpt));
     $('mn-body').innerHTML = s.perKelas.length ? s.perKelas.map(function (k) {
-      return '<tr><td><b>' + esc(k.kelas) + '</b></td><td>' + k.total + '</td><td>' + k.sudah + '</td><td>' + k.belum + '</td>' +
+      return '<tr><td><b>' + esc(kelasNama(k.kelas)) + '</b></td><td>' + k.total + '</td><td>' + k.sudah + '</td><td>' + k.belum + '</td>' +
         '<td><div class="flex"><div class="progress grow"><span style="width:' + k.persen + '%"></span></div><b class="small">' + k.persen + '%</b></div></td></tr>';
     }).join('') : '<tr><td colspan="5" class="center muted">Belum ada data.</td></tr>';
     if (window.Chart) {
@@ -2372,13 +2426,14 @@ function rptBeritaAcara(d) {
 
 function rptRekap(d) {
   var r = d.results, s = d.stats, st = d.settings;
+  s.perKelas = orderKelas(s.perKelas, function (k) { return k.kelas; });
   return kop(st) + '<h3>REKAPITULASI PEROLEHAN SUARA</h3><div class="no">' + esc(st.JUDUL_PEMILIHAN) + ' Tahun ' + esc(st.TAHUN_PEMILIHAN) + '</div>' +
     '<p><b>A. Rekapitulasi Suara</b></p>' + resultTable(r) +
     '<p><b>B. Ringkasan Partisipasi</b></p>' + summaryTable(s, r) +
     '<p><b>C. Rekapitulasi Partisipasi per Kelas</b></p>' +
-    '<table class="ptable"><thead><tr><th class="c">No</th><th>Kelas</th><th class="c">Jumlah Siswa</th><th class="c">Sudah Memilih</th><th class="c">Belum Memilih</th><th class="c">Partisipasi</th></tr></thead><tbody>' +
+    '<table class="ptable"><thead><tr><th class="c">No</th><th>Kelas / Jenis</th><th class="c">Jumlah Pemilih</th><th class="c">Sudah Memilih</th><th class="c">Belum Memilih</th><th class="c">Partisipasi</th></tr></thead><tbody>' +
     s.perKelas.map(function (k, i) {
-      return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(k.kelas) + '</td><td class="c">' + k.total + '</td><td class="c">' + k.sudah + '</td><td class="c">' + k.belum + '</td><td class="c">' + k.persen + '%</td></tr>';
+      return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(kelasNama(k.kelas)) + '</td><td class="c">' + k.total + '</td><td class="c">' + k.sudah + '</td><td class="c">' + k.belum + '</td><td class="c">' + k.persen + '%</td></tr>';
     }).join('') +
     '<tr><td colspan="2" class="r"><b>JUMLAH</b></td><td class="c"><b>' + s.totalDpt + '</b></td><td class="c"><b>' + s.sudah + '</b></td><td class="c"><b>' + s.belum + '</b></td><td class="c"><b>' + s.partisipasi + '%</b></td></tr></tbody></table>' +
     signBlock(getSig(), 'std', d.generatedAt);
@@ -2408,14 +2463,14 @@ function rptPartisipasi(d) {
     if (x.STATUS_AKUN === 'NONAKTIF') return;
     (groups[x.KELAS] = groups[x.KELAS] || []).push(x);
   });
-  var kelas = uniq(Object.keys(groups));
+  var kelas = orderKelas(Object.keys(groups));
   return kop(st) + '<h3>DAFTAR PARTISIPASI PEMILIH</h3><div class="no">' + esc(st.JUDUL_PEMILIHAN) + ' Tahun ' + esc(st.TAHUN_PEMILIHAN) + '<br><small>Status per ' + esc(d.generatedAt) + '</small></div>' +
     summaryTable(s, null) +
     kelas.map(function (k, gi) {
       var list = groups[k];
       var sudah = list.filter(function (x) { return x.STATUS_MEMILIH === 'SUDAH MEMILIH'; }).length;
-      return '<div' + (gi > 0 ? ' class="page-break"' : '') + '><p style="margin-top:12px"><b>Kelas ' + esc(k) + '</b> — ' + sudah + ' dari ' + list.length + ' siswa sudah memilih</p>' +
-        '<table class="ptable"><thead><tr><th class="c" style="width:40px">No</th><th style="width:90px">NIS</th><th>Nama Siswa</th><th class="c" style="width:120px">Status</th><th class="c" style="width:140px">Waktu</th></tr></thead><tbody>' +
+      return '<div' + (gi > 0 ? ' class="page-break"' : '') + '><p style="margin-top:12px"><b>' + esc(kelasLabel(k)) + '</b> — ' + sudah + ' dari ' + list.length + ' pemilih sudah memilih</p>' +
+        '<table class="ptable"><thead><tr><th class="c" style="width:40px">No</th><th style="width:130px">' + (isNonSiswa(k) ? 'NIP' : 'NIS') + '</th><th>Nama</th><th class="c" style="width:110px">Status</th><th class="c" style="width:140px">Waktu</th></tr></thead><tbody>' +
         list.map(function (x, i) {
           var ok = x.STATUS_MEMILIH === 'SUDAH MEMILIH';
           return '<tr><td class="c">' + (i + 1) + '</td><td>' + esc(x.NIS) + '</td><td>' + esc(x.NAMA_SISWA) + '</td><td class="c">' + (ok ? 'Sudah' : 'Belum') + '</td><td class="c">' + esc(x.WAKTU_MEMILIH || '-') + '</td></tr>';
