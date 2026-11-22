@@ -231,7 +231,8 @@ Hal yang perlu diingat:
   - Berita Acara Pemilihan
   - Rekapitulasi Suara
   - Hasil Perolehan Setiap Kandidat
-  - Daftar Partisipasi Siswa (sudah tersedia sejak voting berlangsung)
+  - Daftar Hadir Pemilih: lembar per kelas, guru, dan staf dengan kolom tanda tangan. Cetak versi **Kosong** sebelum voting untuk diisi di tempat pemungutan suara, atau versi **Terisi** (jam memilih dari aplikasi) untuk arsip
+  - Daftar Partisipasi Pemilih (sudah tersedia sejak voting berlangsung)
   - Download Excel
 - Untuk menyimpan sebagai PDF, pilih **"Simpan sebagai PDF"** di jendela cetak.
 
