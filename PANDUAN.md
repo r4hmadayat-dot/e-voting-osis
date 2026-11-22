@@ -146,7 +146,7 @@ Dilakukan **satu kali saja**.
 ## 6. Memasukkan Data Pemilih (Siswa, Guru, Staf)
 
 ### Cara A — Import Excel/CSV (disarankan)
-1. Gunakan file **`Template_Import_Pemilih.xlsx`** dari repository (atau dashboard: **Data Siswa → Import Excel/CSV → Unduh Template Excel**).
+1. Gunakan file **`Template_Import_Pemilih.xlsx`** dari repository (atau dashboard: **Data Pemilih → Import Excel/CSV → Unduh Template Excel**).
 2. Isi sheet `DATA` dengan kolom berikut. Siswa, guru, dan staf diisi dalam satu sheet. Guru: kolom NIS diisi NIP dan KELAS diisi `GURU`. Staf: NIS diisi NIP atau kode unik (misal `GTK-001`) dan KELAS diisi `STAF`.
 
    | NIS | NISN | NAMA_SISWA | KELAS | PIN |
@@ -159,13 +159,18 @@ Dilakukan **satu kali saja**.
 4. Setelah selesai, muncul daftar **PIN** untuk siswa baru. **PIN hanya ditampilkan sekali.** Langsung klik **Cetak Kartu PIN** dan/atau **Unduh Excel**.
 
 ### Cara B — Tambah satu per satu
-Buka **Data Siswa → Tambah Siswa**. PIN baru ditampilkan sekali setelah data disimpan.
+Buka **Data Pemilih → Tambah Pemilih**, lalu pilih **Jenis Pemilih**:
+- **Siswa:** isi NIS, NISN (opsional), nama, dan kelas.
+- **Guru:** isi NIP dan nama. Kolom kelas otomatis diisi `GURU`. Jika tidak punya NIP, isi kode unik seperti `GURU-001`.
+- **Staf / Tenaga Kependidikan:** isi NIP (atau kode unik seperti `STAF-001`) dan nama. Kolom kelas otomatis diisi `STAF`.
+
+PIN baru ditampilkan sekali setelah data disimpan. Guru dan staf login di halaman yang sama dengan siswa, memakai **NIP + PIN**.
 
 ### Cara C — Ketik langsung di spreadsheet
 Data juga dapat diketik di sheet DATA_SISWA. `PASSWORD/PIN` boleh diisi PIN biasa, misalnya `482913`. Isi `STATUS_AKUN` dengan `AKTIF` dan `STATUS_MEMILIH` dengan `BELUM MEMILIH`, serta beri setiap siswa `ID_SISWA` yang unik (misalnya `SIS-001`). Saat siswa pertama kali login, PIN tersebut otomatis diubah menjadi hash.
 
 ### Mencetak ulang kartu PIN
-Karena PIN disimpan sebagai hash, PIN lama tidak bisa dilihat lagi. Untuk mencetak kartu, buka **Data Siswa → Kartu PIN per Kelas** (khusus SUPERADMIN). Pilih kelas, dan sistem akan **membuat PIN baru** untuk siswa yang belum memilih, lalu menampilkan kartunya untuk dicetak. Untuk satu siswa yang lupa PIN, gunakan tombol **🔑 Reset PIN** di baris siswa tersebut.
+Karena PIN disimpan sebagai hash, PIN lama tidak bisa dilihat lagi. Untuk mencetak kartu, buka **Data Pemilih → Kartu PIN per Kelas** (khusus SUPERADMIN). Pilih kelas, dan sistem akan **membuat PIN baru** untuk siswa yang belum memilih, lalu menampilkan kartunya untuk dicetak. Untuk satu siswa yang lupa PIN, gunakan tombol **🔑 Reset PIN** di baris siswa tersebut.
 
 > Ketentuan "PIN siswa tidak boleh ditampilkan dalam dashboard" dipenuhi: tabel siswa tidak pernah memuat PIN. PIN hanya muncul sekali, tepat saat dibuat, agar dapat dibagikan kepada siswa.
 
@@ -205,9 +210,9 @@ Hal yang perlu diingat:
 
 ### Persiapan (H-7 s.d. H-1)
 1. **Pengaturan:** isi nama sekolah, judul, tahun, tanggal/waktu mulai dan selesai, pesan selesai, **logo sekolah**, **logo OSIS**, dan banner. Klik **Simpan**. Kedua logo tampil berdampingan di halaman login, kartu pemilih, dan kop semua laporan. Gunakan file PNG berlatar transparan agar rapi.
-2. **Data Siswa:** import seluruh siswa, lalu cetak dan bagikan kartu PIN (bisa dimasukkan ke amplop per kelas).
+2. **Data Pemilih:** import seluruh siswa, guru, dan staf, lalu cetak dan bagikan kartu PIN (bisa dimasukkan ke amplop per kelas).
 3. **Data Kandidat:** masukkan semua pasangan calon beserta foto.
-4. **Simulasi:** buka voting, lalu minta 3–5 siswa/guru mencoba memilih. Tutup voting, periksa hasilnya, kemudian jalankan **Data Siswa → Reset Status Memilih** (ketik `RESET`). Langkah ini menghapus suara simulasi dan mengembalikan semua siswa ke status BELUM MEMILIH.
+4. **Simulasi:** buka voting, lalu minta 3–5 siswa/guru mencoba memilih. Tutup voting, periksa hasilnya, kemudian jalankan **Data Pemilih → Reset Status Memilih** (ketik `RESET`). Langkah ini menghapus suara simulasi dan mengembalikan semua siswa ke status BELUM MEMILIH.
    - Jika PIN peserta simulasi sudah diketahui orang lain, reset PIN mereka.
 
 ### Hari pemilihan
@@ -235,7 +240,7 @@ Hal yang perlu diingat:
 | Menu | SUPERADMIN | PANITIA |
 |---|:-:|:-:|
 | Beranda, Monitoring | ✔ | ✔ |
-| Data Siswa (tambah, edit, import, reset PIN) | ✔ | ✔ |
+| Data Pemilih (tambah, edit, import, reset PIN) | ✔ | ✔ |
 | Hapus siswa, Kartu PIN massal, Reset Status Memilih | ✔ | ✘ |
 | Data Kandidat (kelola) | ✔ | lihat saja |
 | Buka/Tutup Voting, Pengaturan | ✔ | ✘ |
@@ -259,7 +264,7 @@ Lakukan pengujian berikut **saat simulasi**. Setelah selesai, jalankan Reset Sta
 | 7 | PIN salah berulang | Masukkan PIN salah 5 kali | Akun terkunci 10 menit. Panitia dapat membuka kuncinya dengan Reset PIN |
 | 8 | Hasil sementara | Buka menu Hasil Voting saat voting DIBUKA | Terkunci: "Hasil hanya dapat dibuka setelah voting ditutup" |
 | 9 | Kerahasiaan pilihan | Buka sheet HASIL_VOTING | Tidak ada NIS/NISN/nama/PIN, waktu hanya tanggal, urutan baris acak |
-| 10 | PIN tidak terlihat | Buka sheet DATA_SISWA dan tabel Data Siswa | Spreadsheet hanya berisi hash `v1$…`, tabel dashboard tanpa kolom PIN |
+| 10 | PIN tidak terlihat | Buka sheet DATA_SISWA dan tabel Data Pemilih | Spreadsheet hanya berisi hash `v1$…`, tabel dashboard tanpa kolom PIN |
 | 11 | Pembatasan role | Login sebagai PANITIA, coba buka Pengaturan | Menu tidak tersedia. Pemanggilan langsung ke server ditolak "Akses ditolak" |
 | 12 | Sesi kedaluwarsa | Diamkan halaman siswa > 15 menit, lalu pilih | "Sesi berakhir, silakan masuk kembali" |
 | 13 | Manipulasi browser | Buka DevTools → Console, jalankan `api('submitVote','token-palsu','KAN-xxx')` | Ditolak (SESSION_EXPIRED). Identitas pemilih selalu diambil dari sesi server |
