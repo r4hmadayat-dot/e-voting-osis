@@ -53,7 +53,9 @@ var API_FUNCTIONS = [
   'importStudents', 'resetSimulasi',
   'addCandidate', 'updateCandidate', 'deleteCandidate', 'uploadImage',
   'saveSettings', 'openVoting', 'closeVoting',
-  'getVotingStatistics', 'getElectionResults', 'generateReport', 'getLogs'
+  'getVotingStatistics', 'getElectionResults', 'generateReport', 'getLogs',
+  // SK OSIS
+  'getSkOsis', 'saveSkOsis', 'getLogoImages'
 ];
 
 function jsonOut_(obj) {
@@ -1815,4 +1817,143 @@ function getLogs(token, limit) {
   return rows.slice(-limit).reverse().map(function (r) {
     return { WAKTU: r.WAKTU, USER: r.USER, AKTIVITAS: r.AKTIVITAS, KETERANGAN: r.KETERANGAN };
   });
+}
+
+
+/* ============ BAGIAN: SkOsis.gs ============ */
+/**
+ * =====================================================================
+ *  SkOsis.gs — Data Surat Keputusan (SK) Pengurus OSIS.
+ *  - Susunan pengurus disimpan di sheet PENGURUS_OSIS (dibuat otomatis).
+ *  - Data isian SK (nomor, tanggal, penandatangan, dll.) disimpan di
+ *    Script Properties (EV_SK_META).
+ *  - Dokumen Word/PDF dibuat di browser dari data ini.
+ * =====================================================================
+ */
+
+var SK_SHEET = 'PENGURUS_OSIS';
+var SK_HEADERS = ['ID', 'URUTAN', 'KELOMPOK', 'JABATAN', 'ID_SISWA', 'NAMA', 'KELAS', 'NIS'];
+
+/** Membuat sheet PENGURUS_OSIS jika belum ada (tanpa perlu setupDatabase ulang). */
+function skSheet_() {
+  var ss = ss_();
+  var sh = ss.getSheetByName(SK_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(SK_SHEET);
+    sh.getRange(1, 1, 1, SK_HEADERS.length).setValues([SK_HEADERS])
+      .setFontWeight('bold').setBackground('#0b2a5b').setFontColor('#ffffff');
+    sh.setFrozenRows(1);
+    if (sh.getMaxRows() > 1) sh.getRange(2, 1, sh.getMaxRows() - 1, SK_HEADERS.length).setNumberFormat('@');
+    try { protectSheet_(sh); } catch (err) { /* abaikan */ }
+  }
+  return sh;
+}
+
+function skMetaGet_() {
+  var raw = PropertiesService.getScriptProperties().getProperty('EV_SK_META');
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch (err) { return {}; }
+}
+
+/** PUBLIK (admin): data untuk halaman SK OSIS. */
+function getSkOsis(token) {
+  requireAdmin_(token);
+  var st = getSettingsRaw_();
+  var sh = skSheet_();
+  var pengurus = [];
+  var lastRow = sh.getLastRow();
+  if (lastRow > 1) {
+    var t = readTable_(SK_SHEET);
+    pengurus = t.rows.map(function (r) {
+      return { URUTAN: Number(r.URUTAN) || 0, KELOMPOK: r.KELOMPOK, JABATAN: r.JABATAN,
+        ID_SISWA: r.ID_SISWA, NAMA: r.NAMA, KELAS: r.KELAS, NIS: r.NIS };
+    }).sort(function (a, b) { return a.URUTAN - b.URUTAN; });
+  }
+
+  var students = readTable_(SHEETS.SISWA).rows.filter(function (r) {
+    var k = String(r.KELAS || '').toUpperCase();
+    return (r.STATUS_AKUN || STATUS.AKTIF) === STATUS.AKTIF && k !== 'GURU' && k !== 'STAF';
+  }).map(function (r) {
+    return { ID_SISWA: r.ID_SISWA, NIS: r.NIS, NAMA_SISWA: r.NAMA_SISWA, KELAS: r.KELAS };
+  }).sort(function (a, b) { return naturalCompare_(a.KELAS, b.KELAS) || naturalCompare_(a.NAMA_SISWA, b.NAMA_SISWA); });
+
+  var pemenang = null;
+  if (st.STATUS_VOTING === STATUS.DITUTUP) {
+    var res = computeResults_(st);
+    if (res.pemenang) {
+      pemenang = { NOMOR_URUT: res.pemenang.NOMOR_URUT, NAMA_KETUA: res.pemenang.NAMA_KETUA,
+        NAMA_WAKIL: res.pemenang.NAMA_WAKIL, SUARA: res.pemenang.SUARA, PERSEN: res.pemenang.PERSEN };
+    }
+  }
+
+  return { meta: skMetaGet_(), pengurus: pengurus, students: students, pemenang: pemenang, settings: settingsPublic_(st) };
+}
+
+/** PUBLIK (SUPERADMIN): menyimpan data SK dan susunan pengurus. */
+function saveSkOsis(token, meta, pengurus) {
+  var s = requireAdmin_(token, [ROLES.SUPER]);
+  meta = meta || {};
+  pengurus = Array.isArray(pengurus) ? pengurus : [];
+  if (pengurus.length > 300) throw new Error('Susunan pengurus terlalu banyak (maksimal 300 baris).');
+
+  // Bersihkan isian SK (teks panjang dibatasi)
+  var clean = {};
+  Object.keys(meta).slice(0, 60).forEach(function (k) {
+    if (!/^[A-Z0-9_]{2,40}$/.test(k)) return;
+    clean[k] = clean_(meta[k], 4000, true);
+  });
+  var json = JSON.stringify(clean);
+  if (json.length > 8500) throw new Error('Isian SK terlalu panjang. Persingkat teks Menimbang/Mengingat.');
+
+  // Validasi ID siswa terhadap DATA_SISWA
+  var ids = {};
+  readTable_(SHEETS.SISWA).rows.forEach(function (r) { ids[r.ID_SISWA] = r; });
+
+  var rows = pengurus.map(function (p, i) {
+    var stu = p && p.ID_SISWA ? ids[clean_(p.ID_SISWA, 40)] : null;
+    return {
+      ID: 'PGR-' + (i + 1),
+      URUTAN: String(i + 1),
+      KELOMPOK: clean_(p && p.KELOMPOK, 150),
+      JABATAN: clean_(p && p.JABATAN, 120),
+      ID_SISWA: stu ? stu.ID_SISWA : '',
+      NAMA: stu ? stu.NAMA_SISWA : clean_(p && p.NAMA, 100),
+      KELAS: stu ? stu.KELAS : clean_(p && p.KELAS, 30),
+      NIS: stu ? stu.NIS : clean_(p && p.NIS, 30)
+    };
+  }).filter(function (r) { return r.JABATAN || r.NAMA; });
+
+  withLock_(function () {
+    var sh = skSheet_();
+    var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, headers.length).clearContent();
+    if (rows.length) writeRows_(sh, headers, 2, rows);
+    PropertiesService.getScriptProperties().setProperty('EV_SK_META', json);
+  });
+
+  log_(s.username, 'SIMPAN SK OSIS', 'Nomor ' + (clean.NOMOR || '-') + ', ' + rows.length + ' baris pengurus');
+  return { saved: rows.length };
+}
+
+/**
+ * PUBLIK (admin): logo sekolah & OSIS sebagai base64, untuk disisipkan ke file Word.
+ * Hanya untuk logo yang diunggah lewat aplikasi (tersimpan di Google Drive).
+ */
+function getLogoImages(token) {
+  requireAdmin_(token);
+  var st = getSettingsRaw_();
+  function fromUrl(url) {
+    var m = String(url || '').match(/\/d\/([a-zA-Z0-9_-]{20,})/) || String(url || '').match(/[?&]id=([a-zA-Z0-9_-]{20,})/);
+    if (!m) return null;
+    try {
+      var blob = DriveApp.getFileById(m[1]).getBlob();
+      var type = String(blob.getContentType() || '').toLowerCase();
+      if (!/png|jpe?g/.test(type)) return null;
+      if (blob.getBytes().length > 3 * 1024 * 1024) return null;
+      return { type: /png/.test(type) ? 'png' : 'jpg', base64: Utilities.base64Encode(blob.getBytes()) };
+    } catch (err) {
+      return null;
+    }
+  }
+  return { sekolah: fromUrl(st.LOGO_SEKOLAH), osis: fromUrl(st.LOGO_OSIS) };
 }

@@ -559,6 +559,32 @@ table.tbl{font-size:12px}
   .pc-pin b{font-family:'Courier New',monospace;font-size:17pt;letter-spacing:4px;color:#000}
   .pc-note{font-size:7.5pt;color:#444;text-align:center;padding:0 10px 6px;font-style:italic}
   .page-break{page-break-before:always}
+  /* ---------- SK OSIS ---------- */
+  .sk-doc{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.3;color:#000}
+  .sk-kop{display:flex;align-items:center;gap:12px;border-bottom:3px double #000;padding-bottom:8px;margin-bottom:12px}
+  .sk-kop img,.sk-kop .sk-ph{width:78px;height:78px;object-fit:contain;flex:0 0 78px}
+  .sk-kop-tx{flex:1;text-align:center;line-height:1.2}
+  .sk-kop-tx .l1{font-weight:bold;font-size:12pt}.sk-kop-tx .l2{font-weight:bold;font-size:13pt}
+  .sk-kop-tx .l3{font-weight:bold;font-size:15pt}.sk-kop-tx .l4{font-size:10pt}
+  .sk-judul{text-align:center;margin-bottom:10px}.sk-judul .b{font-weight:bold}
+  .sk-cl{width:100%;border-collapse:collapse}
+  .sk-cl td{vertical-align:top;padding:1px 2px;text-align:justify}
+  .sk-cl td.lb{width:30mm;white-space:nowrap}.sk-cl td.cl{width:4mm}.sk-cl td.mk{width:7mm}
+  .sk-cl tr.gap td{height:6px}
+  .sk-mem{text-align:center;font-weight:bold;margin:10px 0 6px}
+  .sk-sign{width:100%;margin-top:14px;page-break-inside:avoid;border-collapse:collapse}
+  .sk-sign>tbody>tr>td{width:50%;vertical-align:top;padding:0 4px}
+  .sk-sign .sp{height:62px}
+  .sk-dt{border-collapse:collapse;border-bottom:1px solid #000;margin-bottom:4px}.sk-dt td{padding:0 6px 0 0}
+  .sk-tbs{margin-top:14px;font-size:11pt;page-break-inside:avoid}
+  .sk-page2{page-break-before:always}
+  .sk-lkep{margin-left:auto;border-collapse:collapse;font-size:11pt;max-width:95mm}.sk-lkep td{vertical-align:top;padding:0 3px}
+  .sk-ljudul{text-align:center;font-weight:bold;margin:12px 0 8px}
+  .sk-ltab{width:100%;border-collapse:collapse;font-size:11pt}
+  .sk-ltab th,.sk-ltab td{border:1px solid #000;padding:2px 5px;vertical-align:top}
+  .sk-ltab th{background:#d9d9d9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sk-ltab td.c{text-align:center}.sk-ltab tr{page-break-inside:avoid}
+  .sk-ltab tr.grp td{font-weight:bold;background:#f2f2f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   /* Daftar hadir: satu kelas (s.d. ±30 pemilih) + tanda tangan muat 1 halaman A4 */
   .dh-page .kop{padding-bottom:6px;margin-bottom:8px}
   .dh-page .kop img,.dh-page .kop .kop-ph{width:58px;height:58px;flex-basis:58px}
@@ -1354,6 +1380,7 @@ var NAV = [
   { id: 'monitoring', label: 'Monitoring Voting', sub: 'Partisipasi secara langsung', icon: 'fa-chart-line' },
   { id: 'hadir', label: 'Daftar Hadir', sub: 'Pemanggilan & kehadiran otomatis', icon: 'fa-clipboard-check' },
   { id: 'hasil', label: 'Hasil Voting', sub: 'Perolehan suara akhir', icon: 'fa-square-poll-vertical' },
+  { id: 'sk', label: 'SK OSIS', sub: 'Surat Keputusan pengurus OSIS', icon: 'fa-file-signature', roles: ['SUPERADMIN'] },
   { id: 'pengaturan', label: 'Pengaturan', sub: 'Jadwal, identitas & tampilan', icon: 'fa-gear', roles: ['SUPERADMIN'] },
   { id: 'laporan', label: 'Laporan', sub: 'Cetak PDF & unduh Excel', icon: 'fa-file-lines' },
   { id: 'akun', label: 'Akun & Log', sub: 'Admin dan aktivitas sistem', icon: 'fa-user-shield', roles: ['SUPERADMIN'] }
@@ -2904,6 +2931,671 @@ function init() {
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+
+<script>
+/* =====================================================================
+   SkOsis.html — Pembuat SK Pengurus OSIS (Word .docx + Cetak/PDF)
+   Bagian SK-CORE tidak bergantung pada halaman (bisa diuji terpisah).
+   ===================================================================== */
+
+/*SK-CORE-START*/
+var SK_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+var SK_SEKBID = [
+  'Keimanan dan Ketakwaan terhadap Tuhan Yang Maha Esa',
+  'Budi Pekerti Luhur atau Akhlak Mulia',
+  'Kepribadian Unggul, Wawasan Kebangsaan, dan Bela Negara',
+  'Prestasi Akademik, Seni, dan/atau Olahraga sesuai Bakat dan Minat',
+  'Demokrasi, Hak Asasi Manusia, Pendidikan Politik, Lingkungan Hidup, Kepekaan dan Toleransi Sosial',
+  'Kreativitas, Keterampilan, dan Kewirausahaan',
+  'Kualitas Jasmani, Kesehatan, dan Gizi Berbasis Sumber Gizi yang Terdiversifikasi',
+  'Sastra dan Budaya',
+  'Teknologi Informasi dan Komunikasi',
+  'Komunikasi dalam Bahasa Inggris'
+];
+
+function skTglIndo(iso) {
+  var m = String(iso || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? (+m[3]) + ' ' + SK_BULAN[+m[2] - 1] + ' ' + m[1] : '..............................';
+}
+
+function skMasaBakti(tahun) {
+  var t = String(tahun || '');
+  if (/^\d{4}\/\d{4}$/.test(t)) return t;
+  if (/^\d{4}$/.test(t)) return t + '/' + (Number(t) + 1);
+  return t || '....../......';
+}
+
+/** Isian SK bawaan. Teks boleh memakai {SEKOLAH}, {MASA_BAKTI}, {TGL_PEMILIHAN}. */
+function skDefaults(settings) {
+  var st = settings || {};
+  var tahun = String(st.TAHUN_PEMILIHAN || new Date().getFullYear()).slice(0, 4);
+  var d = new Date(); function p(n) { return (n < 10 ? '0' : '') + n; }
+  return {
+    KOP1: 'PEMERINTAH KABUPATEN MOROWALI UTARA',
+    KOP2: 'DINAS PENDIDIKAN DAN KEBUDAYAAN',
+    SEKOLAH: String(st.NAMA_SEKOLAH || 'SMP Negeri 2 Soyo Jaya'),
+    ALAMAT: 'Desa Lembah Sumara, Kecamatan Soyo Jaya, Kabupaten Morowali Utara',
+    KONTAK: '',
+    NOMOR: '421.3/ ....... /SMPN2-SJ/' + tahun,
+    MASA_BAKTI: skMasaBakti(st.TAHUN_PEMILIHAN),
+    TEMPAT: 'Lembah Sumara',
+    TANGGAL: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()),
+    KEPSEK: '', NIP_KEPSEK: '',
+    PEMBINA: '', NIP_PEMBINA: '',
+    KERTAS: 'A4',
+    MENIMBANG: [
+      'bahwa Organisasi Siswa Intra Sekolah (OSIS) merupakan wadah organisasi murid di sekolah untuk mencapai tujuan pembinaan kesiswaan;',
+      'bahwa telah dilaksanakan pemilihan Ketua dan Wakil Ketua OSIS {SEKOLAH} secara langsung, umum, bebas, rahasia, jujur, dan adil melalui aplikasi E-Voting OSIS;',
+      'bahwa agar OSIS dapat melaksanakan tugas dan fungsinya dengan baik, perlu ditetapkan susunan pengurus OSIS Masa Bakti {MASA_BAKTI};',
+      'bahwa nama-nama yang tercantum dalam Lampiran Keputusan ini dipandang cakap dan memenuhi syarat untuk diangkat sebagai Pengurus OSIS;',
+      'bahwa berdasarkan pertimbangan sebagaimana dimaksud dalam huruf a sampai dengan huruf d, perlu menetapkan Keputusan Kepala {SEKOLAH} tentang Pengangkatan Pengurus OSIS {SEKOLAH} Masa Bakti {MASA_BAKTI};'
+    ].join('\n'),
+    MENGINGAT: [
+      'Undang-Undang Nomor 20 Tahun 2003 tentang Sistem Pendidikan Nasional;',
+      'Undang-Undang Nomor 23 Tahun 2002 tentang Perlindungan Anak sebagaimana telah beberapa kali diubah terakhir dengan Undang-Undang Nomor 17 Tahun 2016;',
+      'Peraturan Pemerintah Nomor 57 Tahun 2021 tentang Standar Nasional Pendidikan sebagaimana telah diubah dengan Peraturan Pemerintah Nomor 4 Tahun 2022;',
+      'Peraturan Menteri Pendidikan Nasional Nomor 39 Tahun 2008 tentang Pembinaan Kesiswaan;',
+      'Peraturan Menteri Pendidikan Dasar dan Menengah Nomor 6 Tahun 2026 tentang Budaya Sekolah Aman dan Nyaman;'
+    ].join('\n'),
+    MEMPERHATIKAN: [
+      'Hasil pemungutan suara pemilihan Ketua dan Wakil Ketua OSIS {SEKOLAH} tanggal {TGL_PEMILIHAN};',
+      'Hasil musyawarah pembentukan Pengurus OSIS bersama Pembina OSIS.'
+    ].join('\n'),
+    TUGAS: [
+      'menyusun dan melaksanakan program kerja OSIS selama masa bakti;',
+      'membina dan mengembangkan potensi, bakat, minat, dan karakter murid melalui kegiatan sekolah;',
+      'menjaga nama baik sekolah serta mendukung terwujudnya budaya sekolah yang aman dan nyaman;',
+      'menyampaikan laporan pertanggungjawaban kepada Kepala Sekolah melalui Pembina OSIS pada akhir masa bakti.'
+    ].join('\n'),
+    TEMBUSAN: [
+      'Kepala Dinas Pendidikan dan Kebudayaan Kabupaten Morowali Utara;',
+      'Ketua Komite Sekolah;',
+      'Pembina OSIS;',
+      'Arsip.'
+    ].join('\n')
+  };
+}
+
+/** Susunan pengurus bawaan: pengurus inti + 10 seksi bidang (Permendiknas 39/2008). */
+function skDefaultPengurus() {
+  var rows = [];
+  ['Ketua OSIS', 'Wakil Ketua OSIS', 'Sekretaris I', 'Sekretaris II', 'Bendahara I', 'Bendahara II'].forEach(function (j) {
+    rows.push({ KELOMPOK: 'Pengurus Inti', JABATAN: j, ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' });
+  });
+  SK_SEKBID.forEach(function (b, i) {
+    var g = 'Seksi Bidang ' + (i + 1) + ': ' + b;
+    rows.push({ KELOMPOK: g, JABATAN: 'Koordinator', ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' });
+    rows.push({ KELOMPOK: g, JABATAN: 'Anggota', ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' });
+  });
+  return rows;
+}
+
+function skLines(text) {
+  return String(text || '').split(/\r?\n/).map(function (x) {
+    return x.replace(/^\s*(?:[a-z]\.|\d+\.|[-•*])\s*/i, '').trim();
+  }).filter(Boolean);
+}
+
+/** Menyusun seluruh isi SK dari isian + pengurus. Dipakai oleh Word dan cetak. */
+function skModel(meta, pengurus, settings) {
+  var m = {};
+  var def = skDefaults(settings);
+  Object.keys(def).forEach(function (k) { m[k] = (meta && meta[k] != null && String(meta[k]).trim() !== '') ? String(meta[k]) : def[k]; });
+  var sekolah = m.SEKOLAH.trim();
+  var SEK = sekolah.toUpperCase();
+  var tglPilih = settings && settings.TANGGAL_MULAI ? skTglIndo(settings.TANGGAL_MULAI) : '..............................';
+  var fill = function (t) {
+    return String(t).replace(/\{SEKOLAH\}/g, sekolah).replace(/\{MASA_BAKTI\}/g, m.MASA_BAKTI).replace(/\{TGL_PEMILIHAN\}/g, tglPilih);
+  };
+  var letters = 'abcdefghijklmnopqrstuvwxyz';
+  var lettered = function (arr) { return arr.map(function (t, i) { return { mark: letters.charAt(i) + '.', text: fill(t) }; }); };
+  var numbered = function (arr) { return arr.map(function (t, i) { return { mark: (i + 1) + '.', text: fill(t) }; }); };
+
+  var groups = [];
+  var gmap = {};
+  (pengurus || []).forEach(function (p) {
+    if (!p || (!p.JABATAN && !p.NAMA)) return;
+    var g = p.KELOMPOK || 'Pengurus';
+    if (!gmap[g]) { gmap[g] = { nama: g, rows: [] }; groups.push(gmap[g]); }
+    gmap[g].rows.push({ jabatan: p.JABATAN || '', nama: p.NAMA || '', kelas: p.KELAS || '' });
+  });
+
+  return {
+    kertas: m.KERTAS === 'F4' ? 'F4' : 'A4',
+    kop: { l1: m.KOP1, l2: m.KOP2, sekolah: SEK, alamat: m.ALAMAT, kontak: m.KONTAK },
+    judul: [
+      { t: 'KEPUTUSAN KEPALA ' + SEK, b: true },
+      { t: 'NOMOR : ' + m.NOMOR, b: false },
+      { t: '', b: false },
+      { t: 'TENTANG', b: true },
+      { t: 'PENGANGKATAN PENGURUS ORGANISASI SISWA INTRA SEKOLAH (OSIS)', b: true },
+      { t: SEK + ' MASA BAKTI ' + m.MASA_BAKTI, b: true },
+      { t: '', b: false },
+      { t: 'DENGAN RAHMAT TUHAN YANG MAHA ESA', b: true },
+      { t: '', b: false },
+      { t: 'KEPALA ' + SEK + ',', b: true }
+    ],
+    menimbang: lettered(skLines(m.MENIMBANG)),
+    mengingat: numbered(skLines(m.MENGINGAT)),
+    memperhatikan: numbered(skLines(m.MEMPERHATIKAN)),
+    menetapkan: 'KEPUTUSAN KEPALA ' + SEK + ' TENTANG PENGANGKATAN PENGURUS ORGANISASI SISWA INTRA SEKOLAH (OSIS) ' + SEK + ' MASA BAKTI ' + m.MASA_BAKTI + '.',
+    diktum: [
+      { label: 'KESATU', text: 'Mengangkat murid yang namanya tercantum dalam Lampiran Keputusan ini sebagai Pengurus OSIS ' + sekolah + ' Masa Bakti ' + m.MASA_BAKTI + '.' },
+      { label: 'KEDUA', text: 'Pengurus OSIS sebagaimana dimaksud dalam Diktum KESATU mempunyai tugas:', list: lettered(skLines(m.TUGAS)) },
+      { label: 'KETIGA', text: 'Dalam melaksanakan tugasnya, Pengurus OSIS dibimbing oleh Pembina OSIS dan bertanggung jawab kepada Kepala Sekolah.' },
+      { label: 'KEEMPAT', text: 'Segala biaya yang timbul akibat ditetapkannya Keputusan ini dibebankan pada anggaran sekolah sesuai dengan ketentuan peraturan perundang-undangan.' },
+      { label: 'KELIMA', text: 'Keputusan ini mulai berlaku pada tanggal ditetapkan, dengan ketentuan apabila di kemudian hari terdapat kekeliruan dalam penetapannya akan diadakan perbaikan sebagaimana mestinya.' }
+    ],
+    ditetapkan: { di: m.TEMPAT, tanggal: skTglIndo(m.TANGGAL) },
+    kepsek: { jabatan: 'Kepala ' + sekolah + ',', nama: m.KEPSEK, nip: m.NIP_KEPSEK },
+    pembina: { jabatan: 'Pembina OSIS,', nama: m.PEMBINA, nip: m.NIP_PEMBINA },
+    tembusan: numbered(skLines(m.TEMBUSAN)),
+    lampiran: {
+      kepala: [
+        ['LAMPIRAN', 'KEPUTUSAN KEPALA ' + SEK],
+        ['NOMOR', m.NOMOR],
+        ['TANGGAL', skTglIndo(m.TANGGAL)],
+        ['TENTANG', 'PENGANGKATAN PENGURUS OSIS ' + SEK + ' MASA BAKTI ' + m.MASA_BAKTI]
+      ],
+      judul: ['SUSUNAN PENGURUS ORGANISASI SISWA INTRA SEKOLAH (OSIS)', SEK, 'MASA BAKTI ' + m.MASA_BAKTI],
+      pembinaRows: [
+        { jabatan: 'Penanggung Jawab', nama: m.KEPSEK ? m.KEPSEK + ' (Kepala Sekolah)' : 'Kepala Sekolah', kelas: '-' },
+        { jabatan: 'Pembina OSIS', nama: m.PEMBINA || '..............................', kelas: '-' }
+      ],
+      groups: groups
+    }
+  };
+}
+
+/* ---------- Keluaran 1: HTML untuk Cetak / Simpan PDF ---------- */
+function skEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+
+function skHtml(md, logos) {
+  var E = skEsc;
+  var logo = function (url) { return url ? '<img src="' + E(url) + '" referrerpolicy="no-referrer" alt="">' : '<div class="sk-ph"></div>'; };
+  var kop = '<div class="sk-kop">' + logo(logos && logos.sekolah) + '<div class="sk-kop-tx">' +
+    (md.kop.l1 ? '<div class="l1">' + E(md.kop.l1) + '</div>' : '') + (md.kop.l2 ? '<div class="l2">' + E(md.kop.l2) + '</div>' : '') +
+    '<div class="l3">' + E(md.kop.sekolah) + '</div><div class="l4">' + E(md.kop.alamat) + '</div>' +
+    (md.kop.kontak ? '<div class="l4">' + E(md.kop.kontak) + '</div>' : '') + '</div>' + logo(logos && logos.osis) + '</div>';
+  var clause = function (label, items) {
+    if (!items.length) return '';
+    return items.map(function (it, i) {
+      return '<tr><td class="lb">' + (i === 0 ? E(label) : '') + '</td><td class="cl">' + (i === 0 ? ':' : '') + '</td><td class="mk">' + E(it.mark) + '</td><td class="tx">' + E(it.text) + '</td></tr>';
+    }).join('');
+  };
+  var sign = function () {
+    var n = function (x) { return '<b><u>' + E(x.nama || '..............................') + '</u></b><br>NIP. ' + E(x.nip || '..............................'); };
+    return '<table class="sk-sign"><tr><td><br><br>' + E(md.pembina.jabatan) + '<div class="sp"></div>' + n(md.pembina) + '</td>' +
+      '<td><table class="sk-dt"><tr><td>Ditetapkan di</td><td>: ' + E(md.ditetapkan.di) + '</td></tr><tr><td>Pada tanggal</td><td>: ' + E(md.ditetapkan.tanggal) + '</td></tr></table>' +
+      E(md.kepsek.jabatan) + '<div class="sp"></div>' + n(md.kepsek) + '</td></tr></table>';
+  };
+  var sk = kop +
+    '<div class="sk-judul">' + md.judul.map(function (j) { return '<div' + (j.b ? ' class="b"' : '') + '>' + (j.t ? E(j.t) : '&nbsp;') + '</div>'; }).join('') + '</div>' +
+    '<table class="sk-cl">' + clause('Menimbang', md.menimbang) + '<tr class="gap"><td colspan="4"></td></tr>' +
+    clause('Mengingat', md.mengingat) + '<tr class="gap"><td colspan="4"></td></tr>' +
+    clause('Memperhatikan', md.memperhatikan) + '</table>' +
+    '<div class="sk-mem">MEMUTUSKAN:</div>' +
+    '<table class="sk-cl"><tr><td class="lb">Menetapkan</td><td class="cl">:</td><td class="tx" colspan="2"><b>' + E(md.menetapkan) + '</b></td></tr>' +
+    md.diktum.map(function (d) {
+      var h = '<tr class="gap"><td colspan="4"></td></tr><tr><td class="lb">' + E(d.label) + '</td><td class="cl">:</td><td class="tx" colspan="2">' + E(d.text) + '</td></tr>';
+      if (d.list) h += d.list.map(function (it) { return '<tr><td></td><td></td><td class="mk">' + E(it.mark) + '</td><td class="tx">' + E(it.text) + '</td></tr>'; }).join('');
+      return h;
+    }).join('') + '</table>' + sign() +
+    (md.tembusan.length ? '<div class="sk-tbs"><u>Tembusan</u> disampaikan kepada Yth.:<br>' + md.tembusan.map(function (t) { return E(t.mark + ' ' + t.text); }).join('<br>') + '</div>' : '');
+
+  var L = md.lampiran, no = 0;
+  var row = function (r) { no++; return '<tr><td class="c">' + no + '</td><td>' + E(r.jabatan) + '</td><td>' + E(r.nama || '..............................') + '</td><td class="c">' + E(r.kelas || '') + '</td></tr>'; };
+  var abjad = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var lamp = '<div class="sk-page2">' +
+    '<table class="sk-lkep">' + L.kepala.map(function (k) { return '<tr><td>' + E(k[0]) + '</td><td>:</td><td>' + E(k[1]) + '</td></tr>'; }).join('') + '</table>' +
+    '<div class="sk-ljudul">' + L.judul.map(function (t) { return '<div>' + E(t) + '</div>'; }).join('') + '</div>' +
+    '<table class="sk-ltab"><thead><tr><th style="width:7%">No</th><th style="width:33%">Jabatan</th><th>Nama</th><th style="width:15%">Kelas</th></tr></thead><tbody>' +
+    '<tr class="grp"><td colspan="4">' + abjad.charAt(0) + '. PEMBINA</td></tr>' + L.pembinaRows.map(row).join('') +
+    L.groups.map(function (g, gi) { return '<tr class="grp"><td colspan="4">' + abjad.charAt(gi + 1) + '. ' + E(String(g.nama).toUpperCase()) + '</td></tr>' + g.rows.map(row).join(''); }).join('') +
+    '</tbody></table>' + sign() + '</div>';
+
+  var size = md.kertas === 'F4' ? '215mm 330mm' : 'A4';
+  return '<style>@page{size:' + size + ';margin:15mm 18mm 15mm 25mm}</style><div class="sk-doc">' + sk + lamp + '</div>';
+}
+
+/* ---------- Keluaran 2: Microsoft Word (.docx) dengan docx.js ---------- */
+function skDocx(docx, md, logos) {
+  var D = docx;
+  var FONT = 'Times New Roman';
+  var NONE = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  var NOB = { top: NONE, bottom: NONE, left: NONE, right: NONE, insideHorizontal: NONE, insideVertical: NONE };
+  var CNOB = { top: NONE, bottom: NONE, left: NONE, right: NONE };
+  var LINE = { style: D.BorderStyle.SINGLE, size: 4, color: '000000' };
+  var CB = { top: LINE, bottom: LINE, left: LINE, right: LINE };
+
+  var pageW = md.kertas === 'F4' ? 12189 : 11906;
+  var pageH = md.kertas === 'F4' ? 18709 : 16838;
+  var mL = 1418, mR = 1021, mT = 851, mB = 851; // 2,5 cm / 1,8 cm / 1,5 cm
+  var W = pageW - mL - mR;
+
+  var run = function (t, o) { o = o || {}; return new D.TextRun({ text: t, bold: !!o.b, underline: o.u ? {} : undefined, size: o.size || 24, font: FONT, italics: !!o.i }); };
+  var para = function (children, o) {
+    o = o || {};
+    return new D.Paragraph({
+      children: Array.isArray(children) ? children : [children],
+      alignment: o.align || D.AlignmentType.LEFT,
+      spacing: { before: o.before || 0, after: o.after || 0, line: o.line || 252 },
+      keepNext: !!o.keepNext,
+      border: o.border
+    });
+  };
+  var cell = function (paras, width, o) {
+    o = o || {};
+    return new D.TableCell({
+      children: Array.isArray(paras) ? paras : [paras],
+      width: { size: width, type: D.WidthType.DXA },
+      borders: o.borders || CNOB,
+      columnSpan: o.span,
+      verticalAlign: o.valign || D.VerticalAlign.TOP,
+      shading: o.shade ? { fill: o.shade, type: D.ShadingType ? D.ShadingType.CLEAR : 'clear', color: 'auto' } : undefined,
+      margins: o.margins || { top: 20, bottom: 20, left: 60, right: 60 }
+    });
+  };
+  var table = function (rows, widths, borders) {
+    return new D.Table({ rows: rows, width: { size: W, type: D.WidthType.DXA }, columnWidths: widths, borders: borders || NOB, layout: D.TableLayoutType.FIXED });
+  };
+  var b64 = function (s) {
+    if (typeof Buffer !== 'undefined') return Buffer.from(s, 'base64');
+    var bin = atob(s), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  };
+  var logoPara = function (img) {
+    if (!img) return para(run(''));
+    return new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: 0 },
+      children: [new D.ImageRun({ data: b64(img.base64), transformation: { width: 76, height: 76 } })] });
+  };
+
+  // KOP
+  var lw = 1300, tw = W - 2 * lw;
+  var kopTx = [];
+  if (md.kop.l1) kopTx.push(para(run(md.kop.l1, { b: true, size: 24 }), { align: D.AlignmentType.CENTER }));
+  if (md.kop.l2) kopTx.push(para(run(md.kop.l2, { b: true, size: 26 }), { align: D.AlignmentType.CENTER }));
+  kopTx.push(para(run(md.kop.sekolah, { b: true, size: 30 }), { align: D.AlignmentType.CENTER }));
+  kopTx.push(para(run(md.kop.alamat, { size: 20 }), { align: D.AlignmentType.CENTER }));
+  if (md.kop.kontak) kopTx.push(para(run(md.kop.kontak, { size: 20 }), { align: D.AlignmentType.CENTER }));
+  var kop = function () {
+    return [
+      table([new D.TableRow({ children: [
+        cell(logoPara(logos && logos.sekolah), lw, { valign: D.VerticalAlign.CENTER }),
+        cell(kopTx.map(function (p) { return p; }), tw, { valign: D.VerticalAlign.CENTER }),
+        cell(logoPara(logos && logos.osis), lw, { valign: D.VerticalAlign.CENTER })
+      ] })], [lw, tw, lw]),
+      para(run(''), { border: { bottom: { style: D.BorderStyle.THICK_THIN_SMALL_GAP || D.BorderStyle.DOUBLE, size: 12, color: '000000', space: 1 } }, after: 160 })
+    ];
+  };
+
+  // Klausul (Menimbang / Mengingat / Memperhatikan)
+  var cw = [1750, 260, 430, W - 1750 - 260 - 430];
+  var just = D.AlignmentType.JUSTIFIED || D.AlignmentType.BOTH;
+  var clauseRows = function (label, items) {
+    return items.map(function (it, i) {
+      return new D.TableRow({ cantSplit: true, children: [
+        cell(para(run(i === 0 ? label : '')), cw[0]),
+        cell(para(run(i === 0 ? ':' : '')), cw[1]),
+        cell(para(run(it.mark)), cw[2]),
+        cell(para(run(it.text), { align: just }), cw[3])
+      ] });
+    });
+  };
+  var gapRow = function () {
+    return new D.TableRow({ children: [cell(para(run('', { size: 10 })), W, { span: 4 })] });
+  };
+
+  var signBlock = function () {
+    var half = Math.floor(W / 2);
+    var who = function (x) {
+      return [para(run('')), para(run(x.nama || '..............................', { b: true, u: true })), para(run('NIP. ' + (x.nip || '..............................')))];
+    };
+    var left = [para(run('')), para(run('')), para(run(md.pembina.jabatan))].concat([para(run('')), para(run('')), para(run(''))]).concat(who(md.pembina).slice(1));
+    var dtw = [1500, 2800];
+    var dt = new D.Table({
+      rows: [['Ditetapkan di', md.ditetapkan.di], ['Pada tanggal', md.ditetapkan.tanggal]].map(function (r, i) {
+        return new D.TableRow({ children: [cell(para(run(r[0])), dtw[0], { margins: { top: 0, bottom: 0, left: 0, right: 40 }, borders: i === 1 ? { top: NONE, left: NONE, right: NONE, bottom: LINE } : CNOB }),
+          cell(para(run(': ' + r[1])), dtw[1], { margins: { top: 0, bottom: 0, left: 0, right: 0 }, borders: i === 1 ? { top: NONE, left: NONE, right: NONE, bottom: LINE } : CNOB })] });
+      }),
+      width: { size: dtw[0] + dtw[1], type: D.WidthType.DXA }, columnWidths: dtw, borders: NOB, layout: D.TableLayoutType.FIXED
+    });
+    var right = [dt, para(run(md.kepsek.jabatan), { before: 60 }), para(run('')), para(run('')), para(run(''))].concat(who(md.kepsek).slice(1));
+    return table([new D.TableRow({ cantSplit: true, children: [cell(left, half), cell(right, W - half)] })], [half, W - half]);
+  };
+
+  // Halaman 1: SK
+  var sk = kop();
+  md.judul.forEach(function (j) { sk.push(para(run(j.t, { b: j.b }), { align: D.AlignmentType.CENTER })); });
+  sk.push(para(run('')));
+  var rows = [].concat(clauseRows('Menimbang', md.menimbang), [gapRow()], clauseRows('Mengingat', md.mengingat));
+  if (md.memperhatikan.length) rows = rows.concat([gapRow()], clauseRows('Memperhatikan', md.memperhatikan));
+  sk.push(table(rows, cw));
+  sk.push(para(run('MEMUTUSKAN:', { b: true }), { align: D.AlignmentType.CENTER, before: 200, after: 120 }));
+  var drows = [new D.TableRow({ children: [
+    cell(para(run('Menetapkan')), cw[0]), cell(para(run(':')), cw[1]),
+    cell(para(run(md.menetapkan, { b: true }), { align: just }), cw[2] + cw[3], { span: 2 })
+  ] })];
+  md.diktum.forEach(function (d) {
+    drows.push(gapRow());
+    drows.push(new D.TableRow({ cantSplit: true, children: [
+      cell(para(run(d.label)), cw[0]), cell(para(run(':')), cw[1]),
+      cell(para(run(d.text), { align: just }), cw[2] + cw[3], { span: 2 })
+    ] }));
+    (d.list || []).forEach(function (it) {
+      drows.push(new D.TableRow({ cantSplit: true, children: [
+        cell(para(run('')), cw[0]), cell(para(run('')), cw[1]), cell(para(run(it.mark)), cw[2]), cell(para(run(it.text), { align: just }), cw[3])
+      ] }));
+    });
+  });
+  sk.push(table(drows, cw));
+  sk.push(para(run('')));
+  sk.push(signBlock());
+  if (md.tembusan.length) {
+    sk.push(para(run('')));
+    sk.push(para([run('Tembusan', { u: true, size: 22 }), run(' disampaikan kepada Yth.:', { size: 22 })]));
+    md.tembusan.forEach(function (t) { sk.push(para(run(t.mark + ' ' + t.text, { size: 22 }))); });
+  }
+
+  // Halaman 2: Lampiran
+  var L = md.lampiran;
+  var lamp = [];
+  var lkepW = [1300, 260, 3300];
+  var lkep = new D.Table({
+    rows: L.kepala.map(function (k) { return new D.TableRow({ children: [cell(para(run(k[0], { size: 22 })), lkepW[0]), cell(para(run(':', { size: 22 })), lkepW[1]), cell(para(run(k[1], { size: 22 })), lkepW[2])] }); }),
+    width: { size: 4860, type: D.WidthType.DXA }, columnWidths: lkepW, borders: NOB, layout: D.TableLayoutType.FIXED,
+    alignment: D.AlignmentType.RIGHT
+  });
+  lamp.push(lkep);
+  lamp.push(para(run('')));
+  L.judul.forEach(function (t) { lamp.push(para(run(t, { b: true }), { align: D.AlignmentType.CENTER })); });
+  lamp.push(para(run('')));
+  var tw4 = [620, 3000, W - 620 - 3000 - 1300, 1300];
+  var hdr = new D.TableRow({ tableHeader: true, children: ['No', 'Jabatan', 'Nama', 'Kelas'].map(function (h, i) {
+    return cell(para(run(h, { b: true }), { align: D.AlignmentType.CENTER }), tw4[i], { borders: CB, shade: 'D9D9D9', valign: D.VerticalAlign.CENTER });
+  }) });
+  var trs = [hdr], no = 0, abjad = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  var grp = function (t) { return new D.TableRow({ cantSplit: true, children: [cell(para(run(t, { b: true })), W, { span: 4, borders: CB, shade: 'F2F2F2' })] }); };
+  var drow = function (r) {
+    no++;
+    return new D.TableRow({ cantSplit: true, children: [
+      cell(para(run(String(no)), { align: D.AlignmentType.CENTER }), tw4[0], { borders: CB }),
+      cell(para(run(r.jabatan)), tw4[1], { borders: CB }),
+      cell(para(run(r.nama || '..............................')), tw4[2], { borders: CB }),
+      cell(para(run(r.kelas || ''), { align: D.AlignmentType.CENTER }), tw4[3], { borders: CB })
+    ] });
+  };
+  trs.push(grp(abjad.charAt(0) + '. PEMBINA'));
+  L.pembinaRows.forEach(function (r) { trs.push(drow(r)); });
+  L.groups.forEach(function (g, gi) {
+    trs.push(grp(abjad.charAt(gi + 1) + '. ' + String(g.nama).toUpperCase()));
+    g.rows.forEach(function (r) { trs.push(drow(r)); });
+  });
+  lamp.push(table(trs, tw4, { top: LINE, bottom: LINE, left: LINE, right: LINE, insideHorizontal: LINE, insideVertical: LINE }));
+  lamp.push(para(run('')));
+  lamp.push(signBlock());
+
+  var props = { page: { size: { width: pageW, height: pageH }, margin: { top: mT, bottom: mB, left: mL, right: mR } } };
+  return new D.Document({
+    creator: 'E-VOTING OSIS',
+    title: 'SK Pengurus OSIS ' + md.kop.sekolah,
+    styles: { default: { document: { run: { font: FONT, size: 24 } } } },
+    sections: [{ properties: props, children: sk }, { properties: props, children: lamp }]
+  });
+}
+/*SK-CORE-END*/
+
+/* =====================================================================
+   HALAMAN "SK OSIS" DI DASHBOARD
+   ===================================================================== */
+var CDN_DOCX = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js';
+
+PAGES.sk = function (el, my) {
+  return api('getSkOsis', tok()).then(function (d) {
+    if (stale(my)) return;
+    var meta = skDefaults(d.settings);
+    Object.keys(d.meta || {}).forEach(function (k) { if (d.meta[k] !== '') meta[k] = d.meta[k]; });
+    S.sk = {
+      students: d.students || [], pemenang: d.pemenang, settings: d.settings, meta: meta,
+      pengurus: (d.pengurus && d.pengurus.length) ? d.pengurus : skDefaultPengurus(), dirty: false
+    };
+    renderSkPage(el);
+  });
+};
+
+function skStuLabel(x) { return x.NAMA_SISWA + ' — ' + x.KELAS + ' — NIS ' + x.NIS; }
+function skRowLabel(r) { return r.NAMA ? (r.ID_SISWA ? r.NAMA + ' — ' + r.KELAS + ' — NIS ' + r.NIS : r.NAMA) : ''; }
+
+function skField(key, label, o) {
+  o = o || {};
+  var v = S.sk.meta[key] == null ? '' : S.sk.meta[key];
+  if (o.area) return '<div class="field full"><label>' + label + '</label><textarea class="textarea" data-skm="' + key + '" rows="' + (o.rows || 5) + '">' + esc(v) + '</textarea>' + (o.hint ? '<div class="hint">' + o.hint + '</div>' : '') + '</div>';
+  if (o.select) return '<div class="field"><label>' + label + '</label><select class="select" data-skm="' + key + '">' + o.select.map(function (x) { return '<option' + (x === v ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>';
+  return '<div class="field' + (o.full ? ' full' : '') + '"><label>' + label + '</label><input class="input" ' + (o.type ? 'type="' + o.type + '" ' : '') + 'data-skm="' + key + '" value="' + esc(v) + '"' + (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + '>' + (o.hint ? '<div class="hint">' + o.hint + '</div>' : '') + '</div>';
+}
+
+function renderSkPage(el) {
+  var pm = S.sk.pemenang;
+  el.innerHTML =
+    '<div class="alert alert-info"><i class="fa-solid fa-file-signature"></i><span>Isi data SK dan susunan pengurus, lalu klik <b>Simpan</b>. Dokumen dapat diunduh sebagai <b>Word (.docx)</b> untuk diedit, atau dicetak / disimpan sebagai <b>PDF</b>. Nama pengurus dipilih dari Data Pemilih (siswa aktif).</span></div>' +
+    '<div class="card mb-2"><h3><i class="fa-solid fa-pen-to-square"></i> Data Surat Keputusan</h3><div class="grid-form">' +
+    skField('NOMOR', 'Nomor SK', { ph: '421.3/ ... /SMPN2-SJ/2026' }) + skField('MASA_BAKTI', 'Masa Bakti', { ph: '2026/2027' }) +
+    skField('TEMPAT', 'Ditetapkan di') + skField('TANGGAL', 'Tanggal Ditetapkan', { type: 'date' }) +
+    skField('KEPSEK', 'Nama Kepala Sekolah', { ph: 'Nama lengkap dan gelar' }) + skField('NIP_KEPSEK', 'NIP Kepala Sekolah') +
+    skField('PEMBINA', 'Nama Pembina OSIS', { ph: 'Nama lengkap dan gelar' }) + skField('NIP_PEMBINA', 'NIP Pembina OSIS') +
+    skField('KERTAS', 'Ukuran Kertas', { select: ['A4', 'F4'] }) + '<div class="field"></div>' +
+    '</div>' +
+    '<details class="mt-1"><summary class="small" style="cursor:pointer;font-weight:700;color:var(--navy)"><i class="fa-solid fa-heading"></i> Kop surat</summary><div class="grid-form mt-1">' +
+    skField('KOP1', 'Kop baris 1', { full: true }) + skField('KOP2', 'Kop baris 2', { full: true }) + skField('SEKOLAH', 'Nama sekolah', { full: true }) +
+    skField('ALAMAT', 'Alamat', { full: true }) + skField('KONTAK', 'Kontak (opsional)', { full: true, ph: 'NPSN ... · Email ... · Kode Pos ...' }) +
+    '</div></details>' +
+    '<details class="mt-1"><summary class="small" style="cursor:pointer;font-weight:700;color:var(--navy)"><i class="fa-solid fa-scale-balanced"></i> Isi SK: Menimbang, Mengingat, Memperhatikan, Tugas, Tembusan</summary><div class="grid-form mt-1">' +
+    '<div class="field full"><div class="hint">Satu butir per baris; huruf/nomor urut ditambahkan otomatis. Kata <b>{SEKOLAH}</b>, <b>{MASA_BAKTI}</b>, dan <b>{TGL_PEMILIHAN}</b> akan diganti otomatis. Dasar hukum bawaan disusun per November 2026; sesuaikan bila ada ketentuan baru dari Dinas.</div></div>' +
+    skField('MENIMBANG', 'Menimbang', { area: true, rows: 6 }) + skField('MENGINGAT', 'Mengingat', { area: true, rows: 6 }) +
+    skField('MEMPERHATIKAN', 'Memperhatikan', { area: true, rows: 3 }) + skField('TUGAS', 'Tugas Pengurus (Diktum KEDUA)', { area: true, rows: 4 }) +
+    skField('TEMBUSAN', 'Tembusan', { area: true, rows: 4 }) +
+    '<div class="field full"><button class="btn btn-outline btn-sm" id="sk-reset-text"><i class="fa-solid fa-rotate-left"></i> Kembalikan isi SK bawaan</button></div>' +
+    '</div></details></div>' +
+    '<div class="card mb-2"><h3><i class="fa-solid fa-sitemap"></i> Susunan Pengurus</h3>' +
+    (pm ? '<div class="alert alert-ok small"><i class="fa-solid fa-trophy"></i><span>Pemenang pemilihan: <b>No. ' + esc(pm.NOMOR_URUT) + ' — ' + esc(pm.NAMA_KETUA) + ' &amp; ' + esc(pm.NAMA_WAKIL) + '</b> (' + pm.SUARA + ' suara, ' + pm.PERSEN + '%).</span></div>'
+      : '<div class="alert alert-warn small"><i class="fa-solid fa-lock"></i><span>Ketua dan Wakil Ketua bisa diisi otomatis setelah pemungutan suara <b>ditutup</b> dan ada satu pemenang.</span></div>') +
+    '<div class="toolbar"><button class="btn btn-light btn-sm" id="sk-win"' + (pm ? '' : ' disabled') + '><i class="fa-solid fa-trophy"></i> Isi Ketua &amp; Wakil dari hasil pemilihan</button>' +
+    '<button class="btn btn-light btn-sm" id="sk-std"><i class="fa-solid fa-list"></i> Gunakan struktur standar</button>' +
+    '<button class="btn btn-light btn-sm" id="sk-addg"><i class="fa-solid fa-plus"></i> Tambah kelompok</button><span class="grow"></span>' +
+    '<span class="small muted" id="sk-count"></span></div>' +
+    '<datalist id="sk-dl">' + S.sk.students.map(function (x) { return '<option value="' + esc(skStuLabel(x)) + '"></option>'; }).join('') + '</datalist>' +
+    '<div id="sk-groups"></div></div>' +
+    '<div class="toolbar" style="position:sticky;bottom:0;background:var(--bg);padding:10px 0;z-index:5">' +
+    '<button class="btn btn-primary" id="sk-save"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>' +
+    '<button class="btn btn-light" id="sk-word"><i class="fa-solid fa-file-word"></i> Unduh Word (.docx)</button>' +
+    '<button class="btn btn-light" id="sk-pdf"><i class="fa-solid fa-file-pdf"></i> Cetak / Simpan PDF</button>' +
+    '<span class="small muted" id="sk-state"></span></div>';
+
+  qsa('[data-skm]', el).forEach(function (inp) {
+    inp.addEventListener('input', function () { S.sk.meta[inp.getAttribute('data-skm')] = inp.value; skDirty(); });
+    inp.addEventListener('change', function () { S.sk.meta[inp.getAttribute('data-skm')] = inp.value; skDirty(); });
+  });
+  $('sk-reset-text').onclick = function () {
+    var def = skDefaults(S.sk.settings);
+    ['MENIMBANG', 'MENGINGAT', 'MEMPERHATIKAN', 'TUGAS', 'TEMBUSAN'].forEach(function (k) {
+      S.sk.meta[k] = def[k];
+      var t = el.querySelector('[data-skm="' + k + '"]'); if (t) t.value = def[k];
+    });
+    skDirty(); toast('Isi SK dikembalikan ke bawaan.', 'ok');
+  };
+  $('sk-win').onclick = skFillWinner;
+  $('sk-std').onclick = function () {
+    confirmDialog('Struktur Standar', 'Ganti susunan pengurus dengan struktur standar (Pengurus Inti + 10 Seksi Bidang)? Nama yang sudah diisi akan dikosongkan.', 'Ya, Ganti').then(function (ok) {
+      if (!ok) return; S.sk.pengurus = skDefaultPengurus(); skDirty(); renderSkGroups();
+    });
+  };
+  $('sk-addg').onclick = function () {
+    var n = 'Kelompok Baru ' + (skGroupNames().length + 1);
+    S.sk.pengurus.push({ KELOMPOK: n, JABATAN: 'Koordinator', ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' });
+    skDirty(); renderSkGroups();
+  };
+  $('sk-save').onclick = function () { skSave(this); };
+  $('sk-word').onclick = function () { skWord(this); };
+  $('sk-pdf').onclick = function () { skPdf(); };
+  renderSkGroups();
+  skState();
+}
+
+function skDirty() { S.sk.dirty = true; skState(); }
+function skState() {
+  var e = $('sk-state'); if (!e) return;
+  e.innerHTML = S.sk.dirty ? '<i class="fa-solid fa-circle" style="color:var(--warn);font-size:8px"></i> Ada perubahan belum disimpan' : '<i class="fa-solid fa-check"></i> Tersimpan';
+}
+function skGroupNames() {
+  var seen = {}, out = [];
+  S.sk.pengurus.forEach(function (p) { if (!seen[p.KELOMPOK]) { seen[p.KELOMPOK] = 1; out.push(p.KELOMPOK); } });
+  return out;
+}
+
+function renderSkGroups() {
+  var box = $('sk-groups'); if (!box) return;
+  var names = skGroupNames();
+  var filled = S.sk.pengurus.filter(function (p) { return p.NAMA; }).length;
+  $('sk-count').textContent = filled + ' dari ' + S.sk.pengurus.length + ' jabatan terisi';
+  var pembinaInfo = '<div class="card mt-1" style="padding:12px;box-shadow:none;background:#f6f8fc"><div class="flex"><b style="color:var(--navy);min-width:22px">A.</b><b style="color:var(--navy)">Pembina</b></div>' +
+    '<p class="small muted mt-1">Diisi otomatis di lampiran: <b>Penanggung Jawab</b> = ' + esc(S.sk.meta.KEPSEK || 'Kepala Sekolah') + ', <b>Pembina OSIS</b> = ' + esc(S.sk.meta.PEMBINA || '(isi nama Pembina di atas)') + '.</p></div>';
+  box.innerHTML = pembinaInfo + names.map(function (g, gi) {
+    var rows = [];
+    S.sk.pengurus.forEach(function (p, i) { if (p.KELOMPOK === g) rows.push(i); });
+    return '<div class="card mt-1" style="padding:12px;box-shadow:none;background:#fafcff">' +
+      '<div class="flex mb-2"><b style="color:var(--navy);min-width:22px">' + 'BCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(gi) + '.</b>' +
+      '<input class="input grow" data-gname="' + gi + '" value="' + esc(g) + '" style="font-weight:700">' +
+      '<button class="btn btn-light btn-sm" data-gadd="' + gi + '" title="Tambah baris"><i class="fa-solid fa-plus"></i> Baris</button>' +
+      '<button class="btn btn-light btn-sm" data-gdel="' + gi + '" title="Hapus kelompok" style="color:var(--danger)"><i class="fa-solid fa-trash"></i></button></div>' +
+      rows.map(function (i) {
+        var p = S.sk.pengurus[i];
+        var warn = p.NAMA && !p.ID_SISWA;
+        return '<div class="flex mb-2" style="align-items:flex-start">' +
+          '<input class="input" style="flex:0 0 30%" data-rjab="' + i + '" value="' + esc(p.JABATAN) + '" placeholder="Jabatan">' +
+          '<div class="grow"><input class="input" list="sk-dl" data-rnama="' + i + '" value="' + esc(skRowLabel(p)) + '" placeholder="Ketik nama siswa lalu pilih dari daftar...">' +
+          (warn ? '<div class="hint" style="color:var(--warn)"><i class="fa-solid fa-triangle-exclamation"></i> Nama tidak ada di Data Pemilih (tetap dicetak apa adanya).</div>' : '') + '</div>' +
+          '<button class="btn btn-ghost btn-icon" data-rdel="' + i + '" title="Hapus baris"><i class="fa-solid fa-xmark"></i></button></div>';
+      }).join('') + '</div>';
+  }).join('');
+
+  qsa('[data-gname]', box).forEach(function (inp) {
+    inp.onchange = function () {
+      var old = names[Number(inp.getAttribute('data-gname'))], nu = inp.value.trim() || old;
+      S.sk.pengurus.forEach(function (p) { if (p.KELOMPOK === old) p.KELOMPOK = nu; });
+      skDirty(); renderSkGroups();
+    };
+  });
+  qsa('[data-gadd]', box).forEach(function (b) {
+    b.onclick = function () {
+      var g = names[Number(b.getAttribute('data-gadd'))], last = -1;
+      S.sk.pengurus.forEach(function (p, i) { if (p.KELOMPOK === g) last = i; });
+      S.sk.pengurus.splice(last + 1, 0, { KELOMPOK: g, JABATAN: 'Anggota', ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' });
+      skDirty(); renderSkGroups();
+    };
+  });
+  qsa('[data-gdel]', box).forEach(function (b) {
+    b.onclick = function () {
+      var g = names[Number(b.getAttribute('data-gdel'))];
+      confirmDialog('Hapus Kelompok', 'Hapus kelompok <b>' + esc(g) + '</b> beserta semua barisnya?', 'Ya, Hapus', 'btn-danger').then(function (ok) {
+        if (!ok) return;
+        S.sk.pengurus = S.sk.pengurus.filter(function (p) { return p.KELOMPOK !== g; });
+        skDirty(); renderSkGroups();
+      });
+    };
+  });
+  qsa('[data-rjab]', box).forEach(function (inp) {
+    inp.oninput = function () { S.sk.pengurus[Number(inp.getAttribute('data-rjab'))].JABATAN = inp.value; skDirty(); };
+  });
+  qsa('[data-rnama]', box).forEach(function (inp) {
+    inp.onchange = function () { skSetPerson(Number(inp.getAttribute('data-rnama')), inp.value); renderSkGroups(); };
+  });
+  qsa('[data-rdel]', box).forEach(function (b) {
+    b.onclick = function () { S.sk.pengurus.splice(Number(b.getAttribute('data-rdel')), 1); skDirty(); renderSkGroups(); };
+  });
+}
+
+function skSetPerson(i, text) {
+  var p = S.sk.pengurus[i]; text = String(text || '').trim();
+  var hit = null;
+  S.sk.students.forEach(function (x) { if (skStuLabel(x) === text) hit = x; });
+  if (!hit && text) {
+    var same = S.sk.students.filter(function (x) { return x.NAMA_SISWA.toUpperCase() === text.toUpperCase(); });
+    if (same.length === 1) hit = same[0];
+  }
+  if (hit) { p.ID_SISWA = hit.ID_SISWA; p.NAMA = hit.NAMA_SISWA; p.KELAS = hit.KELAS; p.NIS = hit.NIS; }
+  else { p.ID_SISWA = ''; p.NAMA = text; p.KELAS = ''; p.NIS = ''; }
+  skDirty();
+}
+
+function skFillWinner() {
+  var pm = S.sk.pemenang; if (!pm) return;
+  var find = function (nama) {
+    var m = S.sk.students.filter(function (x) { return x.NAMA_SISWA.trim().toUpperCase() === String(nama).trim().toUpperCase(); });
+    return m.length === 1 ? m[0] : null;
+  };
+  var put = function (re, nama) {
+    var idx = -1;
+    S.sk.pengurus.forEach(function (p, i) { if (idx === -1 && re.test(p.JABATAN)) idx = i; });
+    if (idx === -1) { S.sk.pengurus.unshift({ KELOMPOK: 'Pengurus Inti', JABATAN: re.source.indexOf('Wakil') > -1 ? 'Wakil Ketua OSIS' : 'Ketua OSIS', ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' }); idx = 0; }
+    var s = find(nama), p = S.sk.pengurus[idx];
+    if (s) { p.ID_SISWA = s.ID_SISWA; p.NAMA = s.NAMA_SISWA; p.KELAS = s.KELAS; p.NIS = s.NIS; }
+    else { p.ID_SISWA = ''; p.NAMA = nama; p.KELAS = ''; p.NIS = ''; }
+    return !!s;
+  };
+  var a = put(/^Ketua OSIS$/i, pm.NAMA_KETUA), b = put(/^Wakil Ketua OSIS$/i, pm.NAMA_WAKIL);
+  skDirty(); renderSkGroups();
+  toast(a && b ? 'Ketua dan Wakil Ketua diisi dari hasil pemilihan.' : 'Diisi dari hasil pemilihan. Nama yang tidak ditemukan di Data Pemilih ditandai kuning; pilih ulang dari daftar agar kelasnya ikut terisi.', a && b ? 'ok' : 'warn', 7000);
+}
+
+function skSave(btn) {
+  btnLoading(btn, true, 'Menyimpan...');
+  return api('saveSkOsis', tok(), S.sk.meta, S.sk.pengurus).then(function (r) {
+    btnLoading(btn, false);
+    S.sk.dirty = false; skState();
+    toast('SK OSIS disimpan (' + r.saved + ' baris pengurus).', 'ok');
+  }).catch(function (err) { btnLoading(btn, false); toast(err.message, 'err', 7000); });
+}
+
+function skCheck() {
+  var empty = S.sk.pengurus.filter(function (p) { return !p.NAMA; }).length;
+  var miss = [];
+  if (!S.sk.meta.KEPSEK) miss.push('nama Kepala Sekolah');
+  if (!S.sk.meta.PEMBINA) miss.push('nama Pembina OSIS');
+  if (empty) miss.push(empty + ' jabatan belum ada namanya');
+  if (miss.length) toast('Perhatian: ' + miss.join(', ') + '. Bagian kosong dicetak sebagai titik-titik.', 'warn', 7000);
+}
+
+function skWord(btn) {
+  skCheck();
+  var md = skModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
+  btnLoading(btn, true, 'Membuat Word...');
+  Promise.all([
+    window.docx ? Promise.resolve() : loadScript(CDN_DOCX),
+    api('getLogoImages', tok()).catch(function () { return {}; })
+  ]).then(function (r) {
+    return window.docx.Packer.toBlob(skDocx(window.docx, md, r[1] || {}));
+  }).then(function (blob) {
+    btnLoading(btn, false);
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'SK_Pengurus_OSIS_' + String(md.lampiran.judul[2]).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') + '.docx';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    toast('File Word diunduh.', 'ok');
+  }).catch(function (err) { btnLoading(btn, false); toast('Gagal membuat Word: ' + err.message, 'err', 7000); });
+}
+
+function skPdf() {
+  skCheck();
+  var md = skModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
+  var st = S.sk.settings || {};
+  printDoc(skHtml(md, { sekolah: st.LOGO_SEKOLAH, osis: st.LOGO_OSIS }));
+}
 </script>
 
 </body>
