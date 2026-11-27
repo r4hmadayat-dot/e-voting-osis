@@ -52,4 +52,7 @@ Langkah lengkap ada di [PANDUAN.md](PANDUAN.md).
 | v1.2 | 17 November 2026 | Tampilan diperkecil lagi untuk laptop dengan skala layar 125%–150%; peringatan jika `config.js` belum diisi (hanya `index.html` berubah) |
 | v1.3 | 22 November 2026 | Logo OSIS (Pengaturan); dua logo berdampingan di halaman login, kartu pemilih (desain baru), dan kop semua laporan. `Code.gs` dan `index.html` berubah |
 | v1.4 | 22 November 2026 | Guru & staf sebagai pemilih: menu Data Pemilih, pilihan Jenis Pemilih (Siswa/Guru/Staf), login dengan NIP, filter dan rekap Guru/Staf terpisah. Hanya `index.html` berubah |
-| v1.5 | 22 November 2026 | Laporan baru: Daftar Hadir Pemilih per kelas/guru/staf dengan kolom tanda tangan (cetak kosong atau terisi waktu memilih, unduh Excel). Hanya `index.html` berubah |
+| v1.5 | 22 November 2026 | Daftar hadir dua jenis dengan nomor urut yang sama: **Manual** (cetak, untuk pemanggilan + tanda tangan) dan **Otomatis** (terisi dari aplikasi). Menu baru **Daftar Hadir** menampilkan kehadiran langsung dan pemilih yang harus dipanggil berikutnya. Hanya `index.html` berubah |
+| v1.6 | 22 November 2026 | Tata letak daftar hadir dirapatkan: satu kelas (hingga ±32 pemilih) beserta tanda tangan muat dalam satu halaman A4. Hanya `index.html` berubah |
+| v1.7 | 26 November 2026 | Menu baru **SK OSIS**: SK Pengurus OSIS otomatis (Word .docx dan PDF), nama pengurus dari Data Pemilih, Ketua & Wakil dari hasil pemilihan, ditandatangani Kepala Sekolah dan Pembina OSIS. `Code.gs` dan `index.html` berubah |
+| v1.8 | 27 November 2026 | Menu SK OSIS ditambah tab **Serah Terima Jabatan** (Berita Acara Serah Terima Jabatan Ketua OSIS) dan **Susunan Acara** pelantikan, masing-masing Word dan PDF. Hanya `index.html` berubah |

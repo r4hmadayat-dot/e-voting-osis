@@ -224,6 +224,57 @@ Hal yang perlu diingat:
 5. Panitia memantau melalui **Monitoring Voting**: jumlah suara masuk, partisipasi, siswa yang belum memilih, dan grafik per kelas, yang diperbarui otomatis setiap 15 detik. Perolehan suara **tidak** ditampilkan selama voting berlangsung.
 6. Setelah selesai, SUPERADMIN membuka **Beranda → Tutup Voting**.
 
+### Daftar hadir dan pemanggilan pemilih
+Ada dua daftar hadir yang memakai **nomor urut yang sama** (per kelas, urut nama):
+
+| Daftar hadir | Dibuat | Isinya | Dipakai untuk |
+|---|---|---|---|
+| **Manual (Pemanggilan)** | Dicetak sebelum voting: **Laporan → Daftar Hadir Manual** | No. urut, NIS/NIP, nama, kotak Hadir, tanda tangan | Panitia memanggil pemilih sesuai nomor urut; pemilih mencentang Hadir dan tanda tangan |
+| **Otomatis (Aplikasi)** | Terisi sendiri saat pemilih mengirim suara | No. urut, NIS/NIP, nama, status, jam memilih | Dipantau di menu **Daftar Hadir**; dicetak lewat **Laporan → Daftar Hadir Otomatis** untuk arsip |
+
+Saat pemungutan suara:
+1. Panitia pemanggil memegang Daftar Hadir Manual kelas yang sedang memilih.
+2. Panitia lain membuka menu **Daftar Hadir** di dashboard dan memilih kelas yang sama. Kotak **Panggil berikutnya** menunjukkan nomor urut dan nama pemilih pertama yang belum memilih. Daftar ini diperbarui otomatis setiap 10 detik.
+3. Setelah pemilih selesai mengirim suara, statusnya berubah menjadi **SUDAH MEMILIH** beserta jam memilih, dan kotak Panggil berikutnya pindah ke pemilih selanjutnya.
+4. Setelah semua kelas selesai, cocokkan tanda tangan di daftar manual dengan cetakan Daftar Hadir Otomatis sebagai lampiran berita acara.
+
+### Membuat SK Pengurus OSIS
+Menu **SK OSIS** (khusus SUPERADMIN) membuat Surat Keputusan Kepala Sekolah tentang Pengangkatan Pengurus OSIS, lengkap dengan lampiran susunan pengurus.
+
+1. **Data Surat Keputusan:** isi nomor SK, masa bakti, tempat dan tanggal ditetapkan, nama dan NIP **Kepala Sekolah**, nama dan NIP **Pembina OSIS**, serta ukuran kertas (A4 atau F4).
+2. **Kop surat** (bisa dibuka-tutup): baris pemerintah daerah, dinas, nama sekolah, alamat, dan kontak. Logo sekolah dan logo OSIS diambil dari menu Pengaturan.
+3. **Isi SK** (bisa dibuka-tutup): Menimbang, Mengingat, Memperhatikan, Tugas pengurus, dan Tembusan. Satu butir per baris. Dasar hukum bawaan:
+    - UU Nomor 20 Tahun 2003 tentang Sistem Pendidikan Nasional
+    - UU Nomor 23 Tahun 2002 tentang Perlindungan Anak, terakhir diubah dengan UU Nomor 17 Tahun 2016
+    - PP Nomor 57 Tahun 2021 tentang Standar Nasional Pendidikan, diubah dengan PP Nomor 4 Tahun 2022
+    - Permendiknas Nomor 39 Tahun 2008 tentang Pembinaan Kesiswaan
+    - Permendikdasmen Nomor 6 Tahun 2026 tentang Budaya Sekolah Aman dan Nyaman
+
+    Sesuaikan bila Dinas Pendidikan menetapkan format atau dasar hukum lain.
+4. **Susunan Pengurus:** struktur bawaan berisi Pengurus Inti (Ketua, Wakil, Sekretaris I–II, Bendahara I–II) dan 10 Seksi Bidang sesuai Permendiknas 39/2008.
+    - Klik **Isi Ketua & Wakil dari hasil pemilihan** (tersedia setelah voting ditutup).
+    - Untuk jabatan lain, ketik nama siswa lalu pilih dari daftar yang muncul. Kelas terisi otomatis.
+    - Nama kelompok dan jabatan bisa diubah. Tombol **Baris** menambah anggota; **Tambah kelompok** menambah seksi baru.
+    - Pembina (Kepala Sekolah sebagai Penanggung Jawab, dan Pembina OSIS) otomatis masuk ke bagian A lampiran.
+5. Klik **Simpan**. Data tersimpan di sheet `PENGURUS_OSIS` dan bisa dibuka lagi kapan saja.
+6. Klik **Unduh Word (.docx)** untuk file yang masih bisa diedit di Microsoft Word, atau **Cetak / Simpan PDF** lalu pilih *Simpan sebagai PDF*.
+
+Dokumen berisi dua bagian: halaman SK (ditandatangani Pembina OSIS dan Kepala Sekolah) dan Lampiran susunan pengurus (ditandatangani keduanya juga).
+
+### Berita Acara Serah Terima Jabatan dan Susunan Acara Pelantikan
+Di menu **SK OSIS** ada tiga tab: **SK Pengurus**, **Serah Terima Jabatan**, dan **Susunan Acara**. Tombol *Unduh Word* dan *Cetak / PDF* di bawah halaman selalu membuat dokumen dari tab yang sedang dibuka. Semua isian tersimpan bersama data SK lewat tombol **Simpan**.
+
+**Serah Terima Jabatan** (Berita Acara Serah Terima Jabatan Ketua OSIS):
+1. Isi tanggal, pukul, dan tempat serah terima. Masa bakti pengurus lama terisi otomatis (satu tahun sebelum masa bakti baru) dan bisa diubah.
+2. **Pihak Pertama** (Ketua OSIS lama): ketik nama lalu pilih dari daftar siswa. Kelas terisi otomatis dan bisa diubah.
+3. **Pihak Kedua** (Ketua OSIS baru) diambil otomatis dari Susunan Pengurus, jabatan "Ketua OSIS".
+4. Isi **Saksi 1** (bawaan: Wakil Kepala Sekolah Bidang Kesiswaan). Saksi 2 adalah Pembina OSIS, dan *Mengetahui* adalah Kepala Sekolah; keduanya diambil dari tab SK Pengurus.
+
+**Susunan Acara** (upacara pelantikan):
+1. Isi nama acara, tanggal, pukul, dan tempat.
+2. **Butir Acara:** satu butir per baris; nomor ditambahkan otomatis. Awali baris dengan `*` untuk membuat sub-butir. Butir bawaan mencakup: menyiapkan peserta, penghormatan, laporan pemimpin upacara, doa pembukaan, pembacaan SK, serah terima jabatan, penandatanganan berita acara, janji/ikrar pengurus, pelantikan oleh Kepala Sekolah, sambutan Ketua OSIS terpilih, amanat Pembina Upacara, doa penutup, dan pembubaran.
+3. Tombol **Kembalikan butir acara bawaan** mengisi ulang daftar bawaan.
+
 ### Setelah voting ditutup
 - **Hasil Voting:** jumlah dan persentase suara setiap kandidat, diagram batang, diagram lingkaran, total suara sah, serta partisipasi.
 - **Laporan:** isi dulu data penandatangan, lalu cetak dokumen yang dibutuhkan:
@@ -231,7 +282,7 @@ Hal yang perlu diingat:
   - Berita Acara Pemilihan
   - Rekapitulasi Suara
   - Hasil Perolehan Setiap Kandidat
-  - Daftar Hadir Pemilih: lembar per kelas, guru, dan staf dengan kolom tanda tangan. Cetak versi **Kosong** sebelum voting untuk diisi di tempat pemungutan suara, atau versi **Terisi** (jam memilih dari aplikasi) untuk arsip
+  - Daftar Hadir Manual (Pemanggilan) dan Daftar Hadir Otomatis (Aplikasi). Lihat bagian *Daftar hadir dan pemanggilan pemilih* di bawah
   - Daftar Partisipasi Pemilih (sudah tersedia sejak voting berlangsung)
   - Download Excel
 - Untuk menyimpan sebagai PDF, pilih **"Simpan sebagai PDF"** di jendela cetak.

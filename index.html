@@ -584,6 +584,17 @@ table.tbl{font-size:12px}
   .sk-ltab th,.sk-ltab td{border:1px solid #000;padding:2px 5px;vertical-align:top}
   .sk-ltab th{background:#d9d9d9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .sk-ltab td.c{text-align:center}.sk-ltab tr{page-break-inside:avoid}
+  .stj-t{text-align:justify;margin:0 0 5px;line-height:1.32}
+  .stj-p{border-collapse:collapse;margin:0 0 3px 0;line-height:1.25}.stj-p td{padding:1px 4px;vertical-align:top}.stj-p td.n{width:7mm}.stj-p td.k{width:22mm}
+  .stj-sign{margin-top:2px}.stj-sign>tbody>tr>td{text-align:center}
+  .stj-sign .sp,.stj-kep .sp{height:44px}
+  .stj-sign>tbody>tr>td,.stj-kep{line-height:1.2}
+  .stj-saksi{text-align:center;font-weight:bold;margin-top:6px}
+  .stj-kep{text-align:center;margin-top:4px;page-break-inside:avoid}
+  .ac-list{width:100%;border-collapse:collapse;margin-top:6px}
+  .ac-list>tbody>tr>td{vertical-align:top;padding:3px 4px;text-align:justify;line-height:1.4}
+  .ac-list>tbody>tr>td.n{width:9mm;font-weight:bold}
+  .ac-sub{border-collapse:collapse;margin-top:2px;width:100%}.ac-sub td{vertical-align:top;padding:1px 2px;text-align:justify}.ac-sub td.b{width:6mm}
   .sk-ltab tr.grp td{font-weight:bold;background:#f2f2f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   /* Daftar hadir: satu kelas (s.d. ±30 pemilih) + tanda tangan muat 1 halaman A4 */
   .dh-page .kop{padding-bottom:6px;margin-bottom:8px}
@@ -1380,7 +1391,7 @@ var NAV = [
   { id: 'monitoring', label: 'Monitoring Voting', sub: 'Partisipasi secara langsung', icon: 'fa-chart-line' },
   { id: 'hadir', label: 'Daftar Hadir', sub: 'Pemanggilan & kehadiran otomatis', icon: 'fa-clipboard-check' },
   { id: 'hasil', label: 'Hasil Voting', sub: 'Perolehan suara akhir', icon: 'fa-square-poll-vertical' },
-  { id: 'sk', label: 'SK OSIS', sub: 'Surat Keputusan pengurus OSIS', icon: 'fa-file-signature', roles: ['SUPERADMIN'] },
+  { id: 'sk', label: 'SK OSIS', sub: 'SK pengurus, serah terima jabatan, susunan acara', icon: 'fa-file-signature', roles: ['SUPERADMIN'] },
   { id: 'pengaturan', label: 'Pengaturan', sub: 'Jadwal, identitas & tampilan', icon: 'fa-gear', roles: ['SUPERADMIN'] },
   { id: 'laporan', label: 'Laporan', sub: 'Cetak PDF & unduh Excel', icon: 'fa-file-lines' },
   { id: 'akun', label: 'Akun & Log', sub: 'Admin dan aktivitas sistem', icon: 'fa-user-shield', roles: ['SUPERADMIN'] }
@@ -3009,6 +3020,39 @@ function skDefaults(settings) {
       'menjaga nama baik sekolah serta mendukung terwujudnya budaya sekolah yang aman dan nyaman;',
       'menyampaikan laporan pertanggungjawaban kepada Kepala Sekolah melalui Pembina OSIS pada akhir masa bakti.'
     ].join('\n'),
+    STJ_TANGGAL: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()),
+    STJ_WAKTU: '07.30 WITA',
+    STJ_TEMPAT: 'Lapangan Upacara {SEKOLAH}',
+    STJ_MB_LAMA: '',
+    STJ_P1_NAMA: '', STJ_P1_KELAS: '',
+    STJ_SAKSI_JAB: 'Wakil Kepala Sekolah Bidang Kesiswaan',
+    STJ_SAKSI_NAMA: '', STJ_SAKSI_NIP: '',
+    ACARA_JUDUL: 'UPACARA PELANTIKAN PENGURUS OSIS',
+    ACARA_TANGGAL: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()),
+    ACARA_WAKTU: '07.30 WITA s.d. selesai',
+    ACARA_TEMPAT: 'Lapangan Upacara {SEKOLAH}',
+    ACARA_BUTIR: [
+      'Pemimpin upacara menyiapkan peserta upacara.',
+      'Pembina upacara memasuki tempat upacara.',
+      'Penghormatan kepada Pembina Upacara.',
+      'Laporan Pemimpin Upacara bahwa upacara siap dimulai.',
+      'Pembacaan doa pembukaan.',
+      'Persiapan pelantikan Pengurus OSIS:',
+      '* Pengurus OSIS yang akan dilantik memasuki lapangan upacara.',
+      '* Pembacaan Surat Keputusan Kepala Sekolah tentang Pengangkatan Pengurus OSIS Masa Bakti {MASA_BAKTI}.',
+      '* Serah terima jabatan Ketua OSIS Masa Bakti {MB_LAMA} kepada Ketua OSIS Masa Bakti {MASA_BAKTI}.',
+      '* Penandatanganan Berita Acara Serah Terima Jabatan.',
+      'Pengucapan janji/ikrar Pengurus OSIS Masa Bakti {MASA_BAKTI}.',
+      'Pelantikan Pengurus OSIS Masa Bakti {MASA_BAKTI} oleh Kepala Sekolah.',
+      'Pengurus OSIS yang telah dilantik kembali ke tempat.',
+      'Sambutan Ketua OSIS terpilih Masa Bakti {MASA_BAKTI}.',
+      'Amanat Pembina Upacara.',
+      'Pembacaan doa penutup.',
+      'Laporan Pemimpin Upacara bahwa upacara telah selesai.',
+      'Penghormatan kepada Pembina Upacara.',
+      'Pembina upacara meninggalkan tempat upacara.',
+      'Upacara selesai, peserta upacara dibubarkan.'
+    ].join('\n'),
     TEMBUSAN: [
       'Kepala Dinas Pendidikan dan Kebudayaan Kabupaten Morowali Utara;',
       'Ketua Komite Sekolah;',
@@ -3348,6 +3392,235 @@ function skDocx(docx, md, logos) {
     sections: [{ properties: props, children: sk }, { properties: props, children: lamp }]
   });
 }
+
+/* =====================================================================
+   DOKUMEN PELANTIKAN: Berita Acara Serah Terima Jabatan & Susunan Acara
+   ===================================================================== */
+var SK_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+function skHari(iso) {
+  var m = String(iso || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? SK_HARI[new Date(+m[1], +m[2] - 1, +m[3]).getDay()] : '..............';
+}
+function skPrevMB(mb) {
+  var m = String(mb || '').match(/^(\d{4})\/(\d{4})$/);
+  return m ? (Number(m[1]) - 1) + '/' + (Number(m[2]) - 1) : '....../......';
+}
+/** Isian gabungan (bawaan + tersimpan) dan fungsi pengganti {SEKOLAH} dsb. */
+function skMeta(meta, settings) {
+  var m = {}, def = skDefaults(settings);
+  Object.keys(def).forEach(function (k) { m[k] = (meta && meta[k] != null && String(meta[k]).trim() !== '') ? String(meta[k]) : def[k]; });
+  m.STJ_MB_LAMA = (meta && String(meta.STJ_MB_LAMA || '').trim()) || skPrevMB(m.MASA_BAKTI);
+  var sekolah = m.SEKOLAH.trim();
+  m.fill = function (t) {
+    return String(t || '').replace(/\{SEKOLAH\}/g, sekolah).replace(/\{MASA_BAKTI\}/g, m.MASA_BAKTI).replace(/\{MB_LAMA\}/g, m.STJ_MB_LAMA);
+  };
+  m.kop = { l1: m.KOP1, l2: m.KOP2, sekolah: sekolah.toUpperCase(), alamat: m.ALAMAT, kontak: m.KONTAK };
+  return m;
+}
+function skKetuaBaru(pengurus) {
+  var k = null;
+  (pengurus || []).forEach(function (p) { if (!k && /^ketua osis$/i.test(String(p.JABATAN || '').trim())) k = p; });
+  return k || {};
+}
+
+function stjModel(meta, pengurus, settings) {
+  var m = skMeta(meta, settings), SEK = m.kop.sekolah, sekolah = m.SEKOLAH.trim();
+  var kb = skKetuaBaru(pengurus);
+  return {
+    kertas: m.KERTAS === 'F4' ? 'F4' : 'A4', kop: m.kop,
+    judul: ['BERITA ACARA SERAH TERIMA JABATAN', 'KETUA ORGANISASI SISWA INTRA SEKOLAH (OSIS)', SEK, 'MASA BAKTI ' + m.STJ_MB_LAMA + ' KE ' + m.MASA_BAKTI],
+    pembuka: 'Pada hari ini ' + skHari(m.STJ_TANGGAL) + ', tanggal ' + skTglIndo(m.STJ_TANGGAL) + ', pukul ' + m.STJ_WAKTU + ', bertempat di ' + m.fill(m.STJ_TEMPAT) +
+      ', telah dilaksanakan serah terima jabatan Ketua OSIS ' + sekolah + ' Masa Bakti ' + m.STJ_MB_LAMA + ' kepada Ketua OSIS Masa Bakti ' + m.MASA_BAKTI + '.',
+    pengantar: 'Kami yang bertanda tangan di bawah ini:',
+    pihak: [
+      { nama: m.STJ_P1_NAMA, kelas: m.STJ_P1_KELAS, jabatan: 'Ketua OSIS Masa Bakti ' + m.STJ_MB_LAMA, sebutan: 'PIHAK PERTAMA' },
+      { nama: kb.NAMA || '', kelas: kb.KELAS || '', jabatan: 'Ketua OSIS Masa Bakti ' + m.MASA_BAKTI, sebutan: 'PIHAK KEDUA' }
+    ],
+    isi: [
+      'PIHAK PERTAMA menyerahkan kepada PIHAK KEDUA jabatan Ketua OSIS ' + sekolah + ' beserta segala hak, kewajiban, wewenang, dan tanggung jawabnya, dan PIHAK KEDUA menerima jabatan tersebut untuk dilaksanakan sebaik-baiknya.',
+      'Demikian Berita Acara Serah Terima Jabatan ini dibuat dengan sebenarnya untuk dipergunakan sebagaimana mestinya.'
+    ],
+    tempatTgl: m.TEMPAT + ', ' + skTglIndo(m.STJ_TANGGAL),
+    saksi: [
+      { jabatan: m.STJ_SAKSI_JAB, nama: m.STJ_SAKSI_NAMA, nip: m.STJ_SAKSI_NIP },
+      { jabatan: 'Pembina OSIS', nama: m.PEMBINA, nip: m.NIP_PEMBINA }
+    ],
+    kepsek: { jabatan: 'Kepala ' + sekolah, nama: m.KEPSEK, nip: m.NIP_KEPSEK }
+  };
+}
+
+function acaraModel(meta, settings) {
+  var m = skMeta(meta, settings), items = [];
+  String(m.ACARA_BUTIR || '').split(/\r?\n/).forEach(function (raw) {
+    var line = raw.trim(); if (!line) return;
+    var sub = /^[*\-•]/.test(line);
+    var text = m.fill(line.replace(/^(?:[*\-•]|\d+[.)])\s*/, ''));
+    if (sub && items.length) items[items.length - 1].sub.push(text);
+    else items.push({ text: text, sub: [] });
+  });
+  return {
+    kertas: m.KERTAS === 'F4' ? 'F4' : 'A4', kop: m.kop,
+    judul: ['SUSUNAN ACARA', m.fill(m.ACARA_JUDUL).toUpperCase(), m.kop.sekolah + ' MASA BAKTI ' + m.MASA_BAKTI],
+    info: [skHari(m.ACARA_TANGGAL) + ', ' + skTglIndo(m.ACARA_TANGGAL) + ' · Pukul ' + m.ACARA_WAKTU, m.fill(m.ACARA_TEMPAT)],
+    items: items
+  };
+}
+
+/* ---------- HTML (cetak / PDF) ---------- */
+function skKopHtml(kop, logos) {
+  var E = skEsc;
+  var logo = function (url) { return url ? '<img src="' + E(url) + '" referrerpolicy="no-referrer" alt="">' : '<div class="sk-ph"></div>'; };
+  return '<div class="sk-kop">' + logo(logos && logos.sekolah) + '<div class="sk-kop-tx">' +
+    (kop.l1 ? '<div class="l1">' + E(kop.l1) + '</div>' : '') + (kop.l2 ? '<div class="l2">' + E(kop.l2) + '</div>' : '') +
+    '<div class="l3">' + E(kop.sekolah) + '</div><div class="l4">' + E(kop.alamat) + '</div>' +
+    (kop.kontak ? '<div class="l4">' + E(kop.kontak) + '</div>' : '') + '</div>' + logo(logos && logos.osis) + '</div>';
+}
+function skPageCss(kertas) { return '<style>@page{size:' + (kertas === 'F4' ? '215mm 330mm' : 'A4') + ';margin:15mm 18mm 15mm 25mm}</style>'; }
+
+function stjHtml(md, logos) {
+  var E = skEsc, dots = '..............................';
+  var orang = function (x) { return '<b><u>' + E(x.nama || dots) + '</u></b>' + (x.nip !== undefined ? '<br>NIP. ' + E(x.nip || dots) : ''); };
+  var pihak = md.pihak.map(function (p, i) {
+    return '<table class="stj-p"><tr><td class="n">' + (i + 1) + '.</td><td class="k">Nama</td><td>: <b>' + E(p.nama || dots) + '</b></td></tr>' +
+      '<tr><td></td><td class="k">Kelas</td><td>: ' + E(p.kelas || dots) + '</td></tr>' +
+      '<tr><td></td><td class="k">Jabatan</td><td>: ' + E(p.jabatan) + '</td></tr>' +
+      '<tr><td></td><td colspan="2">Selanjutnya disebut sebagai <b>' + E(p.sebutan) + '</b>.</td></tr></table>';
+  }).join('');
+  var isi = md.isi.map(function (t) {
+    return '<p class="stj-t">' + E(t).replace(/PIHAK PERTAMA/g, '<b>PIHAK PERTAMA</b>').replace(/PIHAK KEDUA/g, '<b>PIHAK KEDUA</b>') + '</p>';
+  }).join('');
+  return skPageCss(md.kertas) + '<div class="sk-doc">' + skKopHtml(md.kop, logos) +
+    '<div class="sk-judul">' + md.judul.map(function (j) { return '<div class="b">' + E(j) + '</div>'; }).join('') + '</div>' +
+    '<p class="stj-t">' + E(md.pembuka) + '</p><p class="stj-t">' + E(md.pengantar) + '</p>' + pihak + isi +
+    '<p style="text-align:right;margin:4px 0 0">' + E(md.tempatTgl) + '</p>' +
+    '<table class="sk-sign stj-sign"><tr><td>PIHAK PERTAMA,<div class="sp"></div>' + orang({ nama: md.pihak[0].nama }) + '</td>' +
+    '<td>PIHAK KEDUA,<div class="sp"></div>' + orang({ nama: md.pihak[1].nama }) + '</td></tr></table>' +
+    '<div class="stj-saksi">Saksi-saksi:</div>' +
+    '<table class="sk-sign stj-sign"><tr><td>' + E(md.saksi[0].jabatan) + ',<div class="sp"></div>' + orang(md.saksi[0]) + '</td>' +
+    '<td>' + E(md.saksi[1].jabatan) + ',<div class="sp"></div>' + orang(md.saksi[1]) + '</td></tr></table>' +
+    '<div class="stj-kep">Mengetahui,<br>' + E(md.kepsek.jabatan) + ',<div class="sp"></div>' + orang(md.kepsek) + '</div></div>';
+}
+
+function acaraHtml(md, logos) {
+  var E = skEsc;
+  return skPageCss(md.kertas) + '<div class="sk-doc">' + skKopHtml(md.kop, logos) +
+    '<div class="sk-judul">' + md.judul.map(function (j) { return '<div class="b">' + E(j) + '</div>'; }).join('') +
+    md.info.map(function (t) { return '<div>' + E(t) + '</div>'; }).join('') + '</div>' +
+    '<table class="ac-list">' + md.items.map(function (it, i) {
+      return '<tr><td class="n">' + (i + 1) + '.</td><td>' + E(it.text) +
+        (it.sub.length ? '<table class="ac-sub">' + it.sub.map(function (s) { return '<tr><td class="b">*</td><td>' + E(s) + '</td></tr>'; }).join('') + '</table>' : '') + '</td></tr>';
+    }).join('') + '</table></div>';
+}
+
+/* ---------- Word (.docx) ---------- */
+function skKit(D, kertas) {
+  var K = {};
+  K.FONT = 'Times New Roman';
+  K.NONE = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  K.NOB = { top: K.NONE, bottom: K.NONE, left: K.NONE, right: K.NONE, insideHorizontal: K.NONE, insideVertical: K.NONE };
+  K.CNOB = { top: K.NONE, bottom: K.NONE, left: K.NONE, right: K.NONE };
+  K.pageW = kertas === 'F4' ? 12189 : 11906; K.pageH = kertas === 'F4' ? 18709 : 16838;
+  K.mL = 1418; K.mR = 1021; K.mT = 851; K.mB = 851; K.W = K.pageW - K.mL - K.mR;
+  K.just = D.AlignmentType.JUSTIFIED || D.AlignmentType.BOTH;
+  K.run = function (t, o) { o = o || {}; return new D.TextRun({ text: t, bold: !!o.b, underline: o.u ? {} : undefined, size: o.size || 24, font: K.FONT }); };
+  K.runs = function (t, o) {
+    // menebalkan PIHAK PERTAMA / PIHAK KEDUA di dalam kalimat
+    return String(t).split(/(PIHAK PERTAMA|PIHAK KEDUA)/).filter(Boolean).map(function (x) { return K.run(x, { b: /^PIHAK (PERTAMA|KEDUA)$/.test(x) || (o && o.b), size: o && o.size }); });
+  };
+  K.para = function (children, o) {
+    o = o || {};
+    return new D.Paragraph({ children: Array.isArray(children) ? children : [children], alignment: o.align || D.AlignmentType.LEFT,
+      spacing: { before: o.before || 0, after: o.after || 0, line: o.line || 264 }, indent: o.indent, border: o.border, keepNext: !!o.keepNext });
+  };
+  K.cell = function (paras, width, o) {
+    o = o || {};
+    return new D.TableCell({ children: Array.isArray(paras) ? paras : [paras], width: { size: width, type: D.WidthType.DXA },
+      borders: K.CNOB, columnSpan: o.span, verticalAlign: o.valign || D.VerticalAlign.TOP, margins: o.margins || { top: 10, bottom: 10, left: 50, right: 50 } });
+  };
+  K.table = function (rows, widths, width) {
+    return new D.Table({ rows: rows, width: { size: width || K.W, type: D.WidthType.DXA }, columnWidths: widths, borders: K.NOB, layout: D.TableLayoutType.FIXED });
+  };
+  K.kop = function (kop, logos) {
+    var b64 = function (s) {
+      if (typeof Buffer !== 'undefined') return Buffer.from(s, 'base64');
+      var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u;
+    };
+    var lp = function (img) {
+      if (!img) return K.para(K.run(''));
+      return new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 0, after: 0 }, children: [new D.ImageRun({ data: b64(img.base64), transformation: { width: 76, height: 76 } })] });
+    };
+    var C = D.AlignmentType.CENTER, tx = [];
+    if (kop.l1) tx.push(K.para(K.run(kop.l1, { b: true }), { align: C, line: 240 }));
+    if (kop.l2) tx.push(K.para(K.run(kop.l2, { b: true, size: 26 }), { align: C, line: 240 }));
+    tx.push(K.para(K.run(kop.sekolah, { b: true, size: 30 }), { align: C, line: 240 }));
+    tx.push(K.para(K.run(kop.alamat, { size: 20 }), { align: C, line: 240 }));
+    if (kop.kontak) tx.push(K.para(K.run(kop.kontak, { size: 20 }), { align: C, line: 240 }));
+    var lw = 1300, tw = K.W - 2 * lw;
+    return [
+      K.table([new D.TableRow({ children: [K.cell(lp(logos && logos.sekolah), lw, { valign: D.VerticalAlign.CENTER }), K.cell(tx, tw, { valign: D.VerticalAlign.CENTER }), K.cell(lp(logos && logos.osis), lw, { valign: D.VerticalAlign.CENTER })] })], [lw, tw, lw]),
+      K.para(K.run(''), { border: { bottom: { style: D.BorderStyle.THICK_THIN_SMALL_GAP || D.BorderStyle.DOUBLE, size: 12, color: '000000', space: 1 } }, after: 160 })
+    ];
+  };
+  K.doc = function (title, children) {
+    return new D.Document({ creator: 'E-VOTING OSIS', title: title, styles: { default: { document: { run: { font: K.FONT, size: 24 } } } },
+      sections: [{ properties: { page: { size: { width: K.pageW, height: K.pageH }, margin: { top: K.mT, bottom: K.mB, left: K.mL, right: K.mR } } }, children: children }] });
+  };
+  return K;
+}
+
+function stjDocx(D, md, logos) {
+  var K = skKit(D, md.kertas), C = D.AlignmentType.CENTER, dots = '..............................';
+  var out = K.kop(md.kop, logos);
+  md.judul.forEach(function (j) { out.push(K.para(K.run(j, { b: true }), { align: C })); });
+  out.push(K.para(K.run('')));
+  out.push(K.para(K.run(md.pembuka), { align: K.just, after: 120 }));
+  out.push(K.para(K.run(md.pengantar), { after: 60 }));
+  var w = [400, 1300, K.W - 1700];
+  md.pihak.forEach(function (p, i) {
+    var r = function (a, b, c, o) { return new D.TableRow({ cantSplit: true, children: [K.cell(K.para(K.run(a)), w[0]), K.cell(K.para(K.run(b)), w[1]), K.cell(K.para(c), w[2])] }); };
+    out.push(K.table([
+      r((i + 1) + '.', 'Nama', [K.run(': '), K.run(p.nama || dots, { b: true })]),
+      r('', 'Kelas', [K.run(': ' + (p.kelas || dots))]),
+      r('', 'Jabatan', [K.run(': ' + p.jabatan)]),
+      new D.TableRow({ children: [K.cell(K.para(K.run('')), w[0]), K.cell(K.para([K.run('Selanjutnya disebut sebagai '), K.run(p.sebutan, { b: true }), K.run('.')]), w[1] + w[2], { span: 2 })] })
+    ], w));
+    out.push(K.para(K.run('', { size: 12 })));
+  });
+  md.isi.forEach(function (t) { out.push(K.para(K.runs(t), { align: K.just, after: 120 })); });
+  out.push(K.para(K.run(md.tempatTgl), { align: D.AlignmentType.RIGHT, before: 60, after: 60 }));
+  var half = Math.floor(K.W / 2);
+  var col = function (head, x, withNip) {
+    var c = [K.para(K.run(head), { align: C }), K.para(K.run('')), K.para(K.run('')), K.para(K.run('')), K.para(K.run(x.nama || dots, { b: true, u: true }), { align: C })];
+    if (withNip) c.push(K.para(K.run('NIP. ' + (x.nip || dots)), { align: C }));
+    return c;
+  };
+  var pair = function (a, b) { return K.table([new D.TableRow({ cantSplit: true, children: [K.cell(a, half), K.cell(b, K.W - half)] })], [half, K.W - half]); };
+  out.push(pair(col('PIHAK PERTAMA,', md.pihak[0], false), col('PIHAK KEDUA,', md.pihak[1], false)));
+  out.push(K.para(K.run('Saksi-saksi:', { b: true }), { align: C, before: 160, after: 60 }));
+  out.push(pair(col(md.saksi[0].jabatan + ',', md.saksi[0], true), col(md.saksi[1].jabatan + ',', md.saksi[1], true)));
+  out.push(K.para(K.run('Mengetahui,'), { align: C, before: 160 }));
+  col(md.kepsek.jabatan + ',', md.kepsek, true).forEach(function (p) { out.push(p); });
+  return K.doc('Berita Acara Serah Terima Jabatan Ketua OSIS', out);
+}
+
+function acaraDocx(D, md, logos) {
+  var K = skKit(D, md.kertas), C = D.AlignmentType.CENTER;
+  var out = K.kop(md.kop, logos);
+  md.judul.forEach(function (j) { out.push(K.para(K.run(j, { b: true }), { align: C })); });
+  md.info.forEach(function (t, i) { out.push(K.para(K.run(t), { align: C, after: i === md.info.length - 1 ? 200 : 0 })); });
+  var w = [600, K.W - 600], ws = [360, K.W - 600 - 360];
+  var rows = [];
+  md.items.forEach(function (it, i) {
+    var body = [K.para(K.run(it.text), { align: K.just })];
+    if (it.sub.length) {
+      body.push(new D.Table({ width: { size: w[1], type: D.WidthType.DXA }, columnWidths: ws, borders: K.NOB, layout: D.TableLayoutType.FIXED,
+        rows: it.sub.map(function (s) { return new D.TableRow({ cantSplit: true, children: [K.cell(K.para(K.run('*')), ws[0], { margins: { top: 10, bottom: 10, left: 0, right: 40 } }), K.cell(K.para(K.run(s), { align: K.just }), ws[1], { margins: { top: 10, bottom: 10, left: 0, right: 0 } })] }); }) }));
+    }
+    rows.push(new D.TableRow({ cantSplit: true, children: [K.cell(K.para(K.run((i + 1) + '.', { b: true })), w[0]), K.cell(body, w[1])] }));
+  });
+  out.push(K.table(rows, w));
+  return K.doc('Susunan Acara Pelantikan Pengurus OSIS', out);
+}
 /*SK-CORE-END*/
 
 /* =====================================================================
@@ -3381,7 +3654,12 @@ function skField(key, label, o) {
 
 function renderSkPage(el) {
   var pm = S.sk.pemenang;
+  S.sk.tab = S.sk.tab || 'sk';
   el.innerHTML =
+    '<div class="tabs"><button data-sktab="sk"><i class="fa-solid fa-file-signature"></i> SK Pengurus</button>' +
+    '<button data-sktab="stj"><i class="fa-solid fa-handshake"></i> Serah Terima Jabatan</button>' +
+    '<button data-sktab="acara"><i class="fa-solid fa-list-ol"></i> Susunan Acara</button></div>' +
+    '<div data-skpane="sk">' +
     '<div class="alert alert-info"><i class="fa-solid fa-file-signature"></i><span>Isi data SK dan susunan pengurus, lalu klik <b>Simpan</b>. Dokumen dapat diunduh sebagai <b>Word (.docx)</b> untuk diedit, atau dicetak / disimpan sebagai <b>PDF</b>. Nama pengurus dipilih dari Data Pemilih (siswa aktif).</span></div>' +
     '<div class="card mb-2"><h3><i class="fa-solid fa-pen-to-square"></i> Data Surat Keputusan</h3><div class="grid-form">' +
     skField('NOMOR', 'Nomor SK', { ph: '421.3/ ... /SMPN2-SJ/2026' }) + skField('MASA_BAKTI', 'Masa Bakti', { ph: '2026/2027' }) +
@@ -3409,7 +3687,8 @@ function renderSkPage(el) {
     '<button class="btn btn-light btn-sm" id="sk-addg"><i class="fa-solid fa-plus"></i> Tambah kelompok</button><span class="grow"></span>' +
     '<span class="small muted" id="sk-count"></span></div>' +
     '<datalist id="sk-dl">' + S.sk.students.map(function (x) { return '<option value="' + esc(skStuLabel(x)) + '"></option>'; }).join('') + '</datalist>' +
-    '<div id="sk-groups"></div></div>' +
+    '<div id="sk-groups"></div></div></div>' +
+    skStjPane() + skAcaraPane() +
     '<div class="toolbar" style="position:sticky;bottom:0;background:var(--bg);padding:10px 0;z-index:5">' +
     '<button class="btn btn-primary" id="sk-save"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>' +
     '<button class="btn btn-light" id="sk-word"><i class="fa-solid fa-file-word"></i> Unduh Word (.docx)</button>' +
@@ -3439,11 +3718,72 @@ function renderSkPage(el) {
     S.sk.pengurus.push({ KELOMPOK: n, JABATAN: 'Koordinator', ID_SISWA: '', NAMA: '', KELAS: '', NIS: '' });
     skDirty(); renderSkGroups();
   };
+  qsa('[data-sktab]', el).forEach(function (b) { b.onclick = function () { S.sk.tab = b.getAttribute('data-sktab'); skShowTab(); }; });
+  $('stj-p1').onchange = function () {
+    var t = this.value.trim(), hit = null;
+    S.sk.students.forEach(function (x) { if (skStuLabel(x) === t || x.NAMA_SISWA.toUpperCase() === t.toUpperCase()) hit = hit || x; });
+    S.sk.meta.STJ_P1_NAMA = hit ? hit.NAMA_SISWA : t;
+    if (hit) { S.sk.meta.STJ_P1_KELAS = hit.KELAS; $('stj-p1k').value = hit.KELAS; }
+    this.value = S.sk.meta.STJ_P1_NAMA; skDirty();
+  };
+  $('acara-reset').onclick = function () {
+    var def = skDefaults(S.sk.settings).ACARA_BUTIR;
+    S.sk.meta.ACARA_BUTIR = def; el.querySelector('[data-skm="ACARA_BUTIR"]').value = def; skDirty();
+    toast('Butir acara dikembalikan ke bawaan.', 'ok');
+  };
+  skShowTab();
   $('sk-save').onclick = function () { skSave(this); };
   $('sk-word').onclick = function () { skWord(this); };
   $('sk-pdf').onclick = function () { skPdf(); };
   renderSkGroups();
   skState();
+}
+
+
+/* ---------- Tab: Serah Terima Jabatan & Susunan Acara ---------- */
+function skStjPane() {
+  return '<div data-skpane="stj">' +
+    '<div class="alert alert-info"><i class="fa-solid fa-handshake"></i><span>Berita Acara Serah Terima Jabatan Ketua OSIS. <b>Pihak Kedua</b> (Ketua baru) diambil dari Susunan Pengurus; Pembina OSIS dan Kepala Sekolah dari tab SK Pengurus.</span></div>' +
+    '<div class="card mb-2"><h3><i class="fa-solid fa-calendar-day"></i> Waktu &amp; Tempat</h3><div class="grid-form">' +
+    skField('STJ_TANGGAL', 'Tanggal Serah Terima', { type: 'date' }) + skField('STJ_WAKTU', 'Pukul', { ph: '07.30 WITA' }) +
+    skField('STJ_TEMPAT', 'Tempat', { full: true, hint: '{SEKOLAH} diganti otomatis dengan nama sekolah.' }) +
+    skField('STJ_MB_LAMA', 'Masa Bakti Pengurus Lama', { ph: 'Otomatis: ' + skPrevMB(S.sk.meta.MASA_BAKTI) }) + '<div class="field"></div>' +
+    '</div></div>' +
+    '<div class="card mb-2"><h3><i class="fa-solid fa-user-group"></i> Para Pihak</h3><div class="grid-form">' +
+    '<div class="field"><label>Pihak Pertama — Ketua OSIS lama</label><input class="input" id="stj-p1" list="sk-dl" value="' + esc(S.sk.meta.STJ_P1_NAMA || '') + '" placeholder="Ketik nama lalu pilih dari daftar..."></div>' +
+    '<div class="field"><label>Kelas Pihak Pertama</label><input class="input" id="stj-p1k" data-skm="STJ_P1_KELAS" value="' + esc(S.sk.meta.STJ_P1_KELAS || '') + '"></div>' +
+    '<div class="field full" id="stj-p2"></div></div></div>' +
+    '<div class="card mb-2"><h3><i class="fa-solid fa-signature"></i> Saksi &amp; Penandatangan</h3><div class="grid-form">' +
+    skField('STJ_SAKSI_JAB', 'Saksi 1 — Jabatan', { full: true }) + skField('STJ_SAKSI_NAMA', 'Saksi 1 — Nama') + skField('STJ_SAKSI_NIP', 'Saksi 1 — NIP') +
+    '<div class="field full" id="stj-ttd"></div></div></div></div>';
+}
+
+function skAcaraPane() {
+  return '<div data-skpane="acara">' +
+    '<div class="alert alert-info"><i class="fa-solid fa-list-ol"></i><span>Susunan acara upacara pelantikan. Satu butir per baris, nomor ditambahkan otomatis. Awali baris dengan <b>*</b> untuk membuat sub-butir. {SEKOLAH}, {MASA_BAKTI}, dan {MB_LAMA} diganti otomatis.</span></div>' +
+    '<div class="card mb-2"><div class="grid-form">' +
+    skField('ACARA_JUDUL', 'Nama Acara', { full: true }) +
+    skField('ACARA_TANGGAL', 'Tanggal', { type: 'date' }) + skField('ACARA_WAKTU', 'Pukul', { ph: '07.30 WITA s.d. selesai' }) +
+    skField('ACARA_TEMPAT', 'Tempat', { full: true }) +
+    skField('ACARA_BUTIR', 'Butir Acara', { area: true, rows: 20 }) +
+    '<div class="field full"><button class="btn btn-outline btn-sm" id="acara-reset"><i class="fa-solid fa-rotate-left"></i> Kembalikan butir acara bawaan</button></div>' +
+    '</div></div></div>';
+}
+
+function skShowTab() {
+  var t = S.sk.tab;
+  qsa('[data-sktab]').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-sktab') === t); });
+  qsa('[data-skpane]').forEach(function (p) { p.style.display = p.getAttribute('data-skpane') === t ? '' : 'none'; });
+  var names = { sk: 'SK Pengurus', stj: 'Berita Acara Serah Terima', acara: 'Susunan Acara' };
+  if ($('sk-word')) $('sk-word').innerHTML = '<i class="fa-solid fa-file-word"></i> Unduh Word: ' + names[t];
+  if ($('sk-pdf')) $('sk-pdf').innerHTML = '<i class="fa-solid fa-file-pdf"></i> Cetak / PDF: ' + names[t];
+  if (t === 'stj') {
+    var kb = skKetuaBaru(S.sk.pengurus);
+    $('stj-p2').innerHTML = '<label>Pihak Kedua — Ketua OSIS baru</label>' + (kb.NAMA
+      ? '<div class="alert alert-ok small" style="margin:0"><i class="fa-solid fa-user-check"></i><span><b>' + esc(kb.NAMA) + '</b>' + (kb.KELAS ? ' — Kelas ' + esc(kb.KELAS) : '') + ' (dari Susunan Pengurus, jabatan "Ketua OSIS")</span></div>'
+      : '<div class="alert alert-warn small" style="margin:0"><i class="fa-solid fa-triangle-exclamation"></i><span>Ketua OSIS belum diisi. Isi dulu di tab <b>SK Pengurus</b> → Susunan Pengurus (jabatan "Ketua OSIS").</span></div>');
+    $('stj-ttd').innerHTML = '<div class="hint">Saksi 2: <b>Pembina OSIS</b> — ' + esc(S.sk.meta.PEMBINA || '(belum diisi)') + '. Mengetahui: <b>Kepala Sekolah</b> — ' + esc(S.sk.meta.KEPSEK || '(belum diisi)') + '. Ubah di tab SK Pengurus.</div>';
+  }
 }
 
 function skDirty() { S.sk.dirty = true; skState(); }
@@ -3570,31 +3910,59 @@ function skCheck() {
   if (miss.length) toast('Perhatian: ' + miss.join(', ') + '. Bagian kosong dicetak sebagai titik-titik.', 'warn', 7000);
 }
 
-function skWord(btn) {
-  skCheck();
+function skCurrentDoc() {
+  var t = S.sk.tab || 'sk';
+  if (t === 'stj') {
+    var md1 = stjModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
+    return { md: md1, docx: stjDocx, html: stjHtml, file: 'Berita_Acara_Serah_Terima_Jabatan_Ketua_OSIS' };
+  }
+  if (t === 'acara') {
+    var md2 = acaraModel(S.sk.meta, S.sk.settings);
+    return { md: md2, docx: acaraDocx, html: acaraHtml, file: 'Susunan_Acara_Pelantikan_OSIS' };
+  }
   var md = skModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
+  return { md: md, docx: skDocx, html: skHtml, file: 'SK_Pengurus_OSIS' };
+}
+
+function skCheckTab() {
+  var t = S.sk.tab || 'sk';
+  if (t === 'sk') return skCheck();
+  if (t === 'stj') {
+    var miss = [];
+    if (!S.sk.meta.STJ_P1_NAMA) miss.push('Pihak Pertama');
+    if (!skKetuaBaru(S.sk.pengurus).NAMA) miss.push('Ketua OSIS baru');
+    if (!S.sk.meta.STJ_SAKSI_NAMA) miss.push('nama Saksi 1');
+    if (!S.sk.meta.PEMBINA) miss.push('nama Pembina');
+    if (!S.sk.meta.KEPSEK) miss.push('nama Kepala Sekolah');
+    if (miss.length) toast('Belum diisi: ' + miss.join(', ') + '. Bagian kosong dicetak sebagai titik-titik.', 'warn', 7000);
+  }
+}
+
+function skWord(btn) {
+  skCheckTab();
+  var cur = skCurrentDoc();
+  var mb = String(S.sk.meta.MASA_BAKTI || '').replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '');
   btnLoading(btn, true, 'Membuat Word...');
   Promise.all([
     window.docx ? Promise.resolve() : loadScript(CDN_DOCX),
     api('getLogoImages', tok()).catch(function () { return {}; })
   ]).then(function (r) {
-    return window.docx.Packer.toBlob(skDocx(window.docx, md, r[1] || {}));
+    return window.docx.Packer.toBlob(cur.docx(window.docx, cur.md, r[1] || {}));
   }).then(function (blob) {
-    btnLoading(btn, false);
+    btnLoading(btn, false); skShowTab();
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'SK_Pengurus_OSIS_' + String(md.lampiran.judul[2]).replace(/[^0-9]+/g, '-').replace(/^-|-$/g, '') + '.docx';
+    a.download = cur.file + '_' + mb + '.docx';
     document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
     toast('File Word diunduh.', 'ok');
-  }).catch(function (err) { btnLoading(btn, false); toast('Gagal membuat Word: ' + err.message, 'err', 7000); });
+  }).catch(function (err) { btnLoading(btn, false); skShowTab(); toast('Gagal membuat Word: ' + err.message, 'err', 7000); });
 }
 
 function skPdf() {
-  skCheck();
-  var md = skModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
-  var st = S.sk.settings || {};
-  printDoc(skHtml(md, { sekolah: st.LOGO_SEKOLAH, osis: st.LOGO_OSIS }));
+  skCheckTab();
+  var cur = skCurrentDoc(), st = S.sk.settings || {};
+  printDoc(cur.html(cur.md, { sekolah: st.LOGO_SEKOLAH, osis: st.LOGO_OSIS }));
 }
 </script>
 
