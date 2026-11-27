@@ -591,6 +591,12 @@ table.tbl{font-size:12px}
   .stj-sign>tbody>tr>td,.stj-kep{line-height:1.2}
   .stj-saksi{text-align:center;font-weight:bold;margin-top:6px}
   .stj-kep{text-align:center;margin-top:4px;page-break-inside:avoid}
+  .ik-doc{font-size:14pt}
+  .ik-judul .b:first-child{font-size:16pt}
+  .ik-t{text-align:justify;line-height:1.6;margin:10px 0}
+  .ik-close{margin-top:14px}
+  .ik-list{width:100%;border-collapse:collapse}.ik-list td{vertical-align:top;padding:3px 4px;line-height:1.6;text-align:justify}.ik-list td.n{width:10mm;font-weight:bold}
+  .ik-sign{display:flex;justify-content:flex-end;margin-top:22px;font-size:12pt;page-break-inside:avoid}.ik-sign>div{text-align:center;min-width:75mm}.ik-sign .sp{height:60px}
   .ac-list{width:100%;border-collapse:collapse;margin-top:6px}
   .ac-list>tbody>tr>td{vertical-align:top;padding:3px 4px;text-align:justify;line-height:1.4}
   .ac-list>tbody>tr>td.n{width:9mm;font-weight:bold}
@@ -1391,7 +1397,7 @@ var NAV = [
   { id: 'monitoring', label: 'Monitoring Voting', sub: 'Partisipasi secara langsung', icon: 'fa-chart-line' },
   { id: 'hadir', label: 'Daftar Hadir', sub: 'Pemanggilan & kehadiran otomatis', icon: 'fa-clipboard-check' },
   { id: 'hasil', label: 'Hasil Voting', sub: 'Perolehan suara akhir', icon: 'fa-square-poll-vertical' },
-  { id: 'sk', label: 'SK OSIS', sub: 'SK pengurus, serah terima jabatan, susunan acara', icon: 'fa-file-signature', roles: ['SUPERADMIN'] },
+  { id: 'sk', label: 'SK OSIS', sub: 'SK, serah terima, susunan acara, ikrar', icon: 'fa-file-signature', roles: ['SUPERADMIN'] },
   { id: 'pengaturan', label: 'Pengaturan', sub: 'Jadwal, identitas & tampilan', icon: 'fa-gear', roles: ['SUPERADMIN'] },
   { id: 'laporan', label: 'Laporan', sub: 'Cetak PDF & unduh Excel', icon: 'fa-file-lines' },
   { id: 'akun', label: 'Akun & Log', sub: 'Admin dan aktivitas sistem', icon: 'fa-user-shield', roles: ['SUPERADMIN'] }
@@ -3053,6 +3059,19 @@ function skDefaults(settings) {
       'Pembina upacara meninggalkan tempat upacara.',
       'Upacara selesai, peserta upacara dibubarkan.'
     ].join('\n'),
+    IKRAR_JUDUL: 'IKRAR PENGURUS OSIS',
+    IKRAR_PEMBUKA: 'Kami, Pengurus Organisasi Siswa Intra Sekolah (OSIS) {SEKOLAH} Masa Bakti {MASA_BAKTI}, dengan sungguh-sungguh berjanji:',
+    IKRAR_BUTIR: [
+      'Bertakwa kepada Tuhan Yang Maha Esa dan menjalankan ajaran agama dengan sebaik-baiknya.',
+      'Setia kepada Pancasila dan Undang-Undang Dasar Negara Republik Indonesia Tahun 1945.',
+      'Menjunjung tinggi nama baik sekolah serta mematuhi tata tertib sekolah.',
+      'Melaksanakan tugas dan tanggung jawab sebagai Pengurus OSIS dengan jujur, disiplin, dan penuh tanggung jawab.',
+      'Menjadi teladan bagi seluruh murid dalam sikap, perkataan, dan perbuatan.',
+      'Mengutamakan kepentingan bersama di atas kepentingan pribadi atau golongan.',
+      'Menjaga persatuan, kekeluargaan, serta budaya sekolah yang aman dan nyaman, dan menolak segala bentuk perundungan dan kekerasan.'
+    ].join('\n'),
+    IKRAR_PENUTUP: 'Semoga Tuhan Yang Maha Esa senantiasa membimbing kami dalam melaksanakan ikrar ini.',
+    IKRAR_TTD: 'Ya',
     TEMBUSAN: [
       'Kepala Dinas Pendidikan dan Kebudayaan Kabupaten Morowali Utara;',
       'Ketua Komite Sekolah;',
@@ -3621,6 +3640,56 @@ function acaraDocx(D, md, logos) {
   out.push(K.table(rows, w));
   return K.doc('Susunan Acara Pelantikan Pengurus OSIS', out);
 }
+
+/* ---------- Janji / Ikrar Pengurus OSIS ---------- */
+function ikrarModel(meta, pengurus, settings) {
+  var m = skMeta(meta, settings), kb = skKetuaBaru(pengurus);
+  return {
+    kertas: m.KERTAS === 'F4' ? 'F4' : 'A4', kop: m.kop,
+    judul: [m.fill(m.IKRAR_JUDUL).toUpperCase(), m.kop.sekolah, 'MASA BAKTI ' + m.MASA_BAKTI],
+    pembuka: m.fill(m.IKRAR_PEMBUKA),
+    butir: skLines(m.IKRAR_BUTIR).map(m.fill),
+    penutup: m.fill(m.IKRAR_PENUTUP),
+    ttd: m.IKRAR_TTD !== 'Tidak',
+    tempatTgl: m.TEMPAT + ', ' + skTglIndo(m.ACARA_TANGGAL || m.STJ_TANGGAL),
+    ketua: { nama: kb.NAMA || '', jabatan: 'Ketua OSIS ' + m.SEKOLAH.trim() + ',' }
+  };
+}
+
+function ikrarHtml(md, logos) {
+  var E = skEsc;
+  return skPageCss(md.kertas) + '<div class="sk-doc ik-doc">' + skKopHtml(md.kop, logos) +
+    '<div class="sk-judul ik-judul">' + md.judul.map(function (j) { return '<div class="b">' + E(j) + '</div>'; }).join('') + '</div>' +
+    '<p class="ik-t">' + E(md.pembuka) + '</p>' +
+    '<table class="ik-list">' + md.butir.map(function (t, i) { return '<tr><td class="n">' + (i + 1) + '.</td><td>' + E(t) + '</td></tr>'; }).join('') + '</table>' +
+    (md.penutup ? '<p class="ik-t ik-close">' + E(md.penutup) + '</p>' : '') +
+    (md.ttd ? '<div class="ik-sign"><div>' + E(md.tempatTgl) + '<br>Atas nama Pengurus OSIS,<br>' + E(md.ketua.jabatan) + '<div class="sp"></div><b><u>' + E(md.ketua.nama || '..............................') + '</u></b></div></div>' : '') +
+    '</div>';
+}
+
+function ikrarDocx(D, md, logos) {
+  var K = skKit(D, md.kertas), C = D.AlignmentType.CENTER, BIG = 28;
+  var out = K.kop(md.kop, logos);
+  md.judul.forEach(function (j, i) { out.push(K.para(K.run(j, { b: true, size: i === 0 ? 32 : BIG }), { align: C })); });
+  out.push(K.para(K.run('')));
+  out.push(K.para(K.run(md.pembuka, { size: BIG }), { align: K.just, after: 160, line: 360 }));
+  var w = [700, K.W - 700];
+  out.push(K.table(md.butir.map(function (t, i) {
+    return new D.TableRow({ cantSplit: true, children: [
+      K.cell(K.para(K.run((i + 1) + '.', { b: true, size: BIG }), { line: 360 }), w[0]),
+      K.cell(K.para(K.run(t, { size: BIG }), { align: K.just, line: 360, after: 80 }), w[1])
+    ] });
+  }), w));
+  if (md.penutup) out.push(K.para(K.run(md.penutup, { size: BIG }), { align: K.just, before: 200, line: 360 }));
+  if (md.ttd) {
+    var half = Math.floor(K.W / 2);
+    var right = [K.para(K.run(md.tempatTgl), { align: C }), K.para(K.run('Atas nama Pengurus OSIS,'), { align: C }), K.para(K.run(md.ketua.jabatan), { align: C }),
+      K.para(K.run('')), K.para(K.run('')), K.para(K.run('')), K.para(K.run(md.ketua.nama || '..............................', { b: true, u: true }), { align: C })];
+    out.push(K.para(K.run(''), { before: 200 }));
+    out.push(K.table([new D.TableRow({ cantSplit: true, children: [K.cell(K.para(K.run('')), half), K.cell(right, K.W - half)] })], [half, K.W - half]));
+  }
+  return K.doc('Ikrar Pengurus OSIS', out);
+}
 /*SK-CORE-END*/
 
 /* =====================================================================
@@ -3658,7 +3727,8 @@ function renderSkPage(el) {
   el.innerHTML =
     '<div class="tabs"><button data-sktab="sk"><i class="fa-solid fa-file-signature"></i> SK Pengurus</button>' +
     '<button data-sktab="stj"><i class="fa-solid fa-handshake"></i> Serah Terima Jabatan</button>' +
-    '<button data-sktab="acara"><i class="fa-solid fa-list-ol"></i> Susunan Acara</button></div>' +
+    '<button data-sktab="acara"><i class="fa-solid fa-list-ol"></i> Susunan Acara</button>' +
+    '<button data-sktab="ikrar"><i class="fa-solid fa-hand"></i> Janji / Ikrar</button></div>' +
     '<div data-skpane="sk">' +
     '<div class="alert alert-info"><i class="fa-solid fa-file-signature"></i><span>Isi data SK dan susunan pengurus, lalu klik <b>Simpan</b>. Dokumen dapat diunduh sebagai <b>Word (.docx)</b> untuk diedit, atau dicetak / disimpan sebagai <b>PDF</b>. Nama pengurus dipilih dari Data Pemilih (siswa aktif).</span></div>' +
     '<div class="card mb-2"><h3><i class="fa-solid fa-pen-to-square"></i> Data Surat Keputusan</h3><div class="grid-form">' +
@@ -3688,7 +3758,7 @@ function renderSkPage(el) {
     '<span class="small muted" id="sk-count"></span></div>' +
     '<datalist id="sk-dl">' + S.sk.students.map(function (x) { return '<option value="' + esc(skStuLabel(x)) + '"></option>'; }).join('') + '</datalist>' +
     '<div id="sk-groups"></div></div></div>' +
-    skStjPane() + skAcaraPane() +
+    skStjPane() + skAcaraPane() + skIkrarPane() +
     '<div class="toolbar" style="position:sticky;bottom:0;background:var(--bg);padding:10px 0;z-index:5">' +
     '<button class="btn btn-primary" id="sk-save"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>' +
     '<button class="btn btn-light" id="sk-word"><i class="fa-solid fa-file-word"></i> Unduh Word (.docx)</button>' +
@@ -3731,6 +3801,13 @@ function renderSkPage(el) {
     S.sk.meta.ACARA_BUTIR = def; el.querySelector('[data-skm="ACARA_BUTIR"]').value = def; skDirty();
     toast('Butir acara dikembalikan ke bawaan.', 'ok');
   };
+  $('ikrar-reset').onclick = function () {
+    var def = skDefaults(S.sk.settings);
+    ['IKRAR_JUDUL', 'IKRAR_PEMBUKA', 'IKRAR_BUTIR', 'IKRAR_PENUTUP'].forEach(function (k) {
+      S.sk.meta[k] = def[k]; var t = el.querySelector('[data-skm="' + k + '"]'); if (t) t.value = def[k];
+    });
+    skDirty(); toast('Teks ikrar dikembalikan ke bawaan.', 'ok');
+  };
   skShowTab();
   $('sk-save').onclick = function () { skSave(this); };
   $('sk-word').onclick = function () { skWord(this); };
@@ -3770,11 +3847,25 @@ function skAcaraPane() {
     '</div></div></div>';
 }
 
+function skIkrarPane() {
+  return '<div data-skpane="ikrar">' +
+    '<div class="alert alert-info"><i class="fa-solid fa-hand"></i><span>Teks janji/ikrar dibacakan saat pelantikan, biasanya oleh Ketua OSIS dan diikuti seluruh pengurus. Dicetak dengan huruf lebih besar agar mudah dibaca. Satu butir per baris; {SEKOLAH} dan {MASA_BAKTI} diganti otomatis.</span></div>' +
+    '<div class="card mb-2"><div class="grid-form">' +
+    skField('IKRAR_JUDUL', 'Judul', { ph: 'IKRAR PENGURUS OSIS' }) +
+    skField('IKRAR_TTD', 'Tanda tangan Ketua OSIS di bawah teks', { select: ['Ya', 'Tidak'] }) +
+    skField('IKRAR_PEMBUKA', 'Kalimat pembuka', { area: true, rows: 2 }) +
+    skField('IKRAR_BUTIR', 'Butir janji/ikrar', { area: true, rows: 9 }) +
+    skField('IKRAR_PENUTUP', 'Kalimat penutup (opsional)', { area: true, rows: 2 }) +
+    '<div class="field full"><div class="hint">Nama Ketua OSIS diambil dari Susunan Pengurus; tempat dan tanggal dari tab Susunan Acara.</div>' +
+    '<button class="btn btn-outline btn-sm mt-1" id="ikrar-reset"><i class="fa-solid fa-rotate-left"></i> Kembalikan teks ikrar bawaan</button></div>' +
+    '</div></div></div>';
+}
+
 function skShowTab() {
   var t = S.sk.tab;
   qsa('[data-sktab]').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-sktab') === t); });
   qsa('[data-skpane]').forEach(function (p) { p.style.display = p.getAttribute('data-skpane') === t ? '' : 'none'; });
-  var names = { sk: 'SK Pengurus', stj: 'Berita Acara Serah Terima', acara: 'Susunan Acara' };
+  var names = { sk: 'SK Pengurus', stj: 'Berita Acara Serah Terima', acara: 'Susunan Acara', ikrar: 'Janji / Ikrar' };
   if ($('sk-word')) $('sk-word').innerHTML = '<i class="fa-solid fa-file-word"></i> Unduh Word: ' + names[t];
   if ($('sk-pdf')) $('sk-pdf').innerHTML = '<i class="fa-solid fa-file-pdf"></i> Cetak / PDF: ' + names[t];
   if (t === 'stj') {
@@ -3920,6 +4011,10 @@ function skCurrentDoc() {
     var md2 = acaraModel(S.sk.meta, S.sk.settings);
     return { md: md2, docx: acaraDocx, html: acaraHtml, file: 'Susunan_Acara_Pelantikan_OSIS' };
   }
+  if (t === 'ikrar') {
+    var md3 = ikrarModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
+    return { md: md3, docx: ikrarDocx, html: ikrarHtml, file: 'Ikrar_Pengurus_OSIS' };
+  }
   var md = skModel(S.sk.meta, S.sk.pengurus, S.sk.settings);
   return { md: md, docx: skDocx, html: skHtml, file: 'SK_Pengurus_OSIS' };
 }
@@ -3927,6 +4022,9 @@ function skCurrentDoc() {
 function skCheckTab() {
   var t = S.sk.tab || 'sk';
   if (t === 'sk') return skCheck();
+  if (t === 'ikrar' && S.sk.meta.IKRAR_TTD !== 'Tidak' && !skKetuaBaru(S.sk.pengurus).NAMA) {
+    toast('Ketua OSIS belum diisi di Susunan Pengurus. Nama dicetak sebagai titik-titik.', 'warn', 6000);
+  }
   if (t === 'stj') {
     var miss = [];
     if (!S.sk.meta.STJ_P1_NAMA) miss.push('Pihak Pertama');
